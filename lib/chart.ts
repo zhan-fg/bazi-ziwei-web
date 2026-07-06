@@ -3,6 +3,16 @@ import path from 'path';
 import fs from 'fs';
 
 const CALCULATOR_DIR = path.join(process.cwd(), 'calculator');
+const ROOT_NODE_MODULES = path.join(process.cwd(), 'node_modules');
+
+function execNode(script: string, cwd: string): string {
+  return execSync(`node ${script}`, {
+    cwd,
+    encoding: 'utf-8',
+    maxBuffer: 1024 * 1024,
+    env: { ...process.env, NODE_PATH: ROOT_NODE_MODULES },
+  });
+}
 
 export interface ChartResult {
   json: any;
@@ -29,10 +39,7 @@ export function runChart(birthInfo: {
   if (birthInfo.isLunar) args.push('--isLunar=true');
 
   // Step 1: run-chart — generate chart.json
-  const jsonOutput = execSync(
-    `node dist/run-chart.js ${args.join(' ')}`,
-    { cwd: CALCULATOR_DIR, encoding: 'utf-8', maxBuffer: 1024 * 1024 }
-  );
+  const jsonOutput = execNode(`dist/run-chart.js ${args.join(' ')}`, CALCULATOR_DIR);
 
   // Strip any stderr that leaked into stdout (console.error messages)
   const jsonStart = jsonOutput.indexOf('{');
@@ -47,10 +54,7 @@ export function runChart(birthInfo: {
   const tmpJsonPath = path.join(CALCULATOR_DIR, '.tmp-chart.json');
   fs.writeFileSync(tmpJsonPath, JSON.stringify(chart), 'utf-8');
 
-  const textOutput = execSync(
-    `node dist/dump-text.js --input=.tmp-chart.json`,
-    { cwd: CALCULATOR_DIR, encoding: 'utf-8', maxBuffer: 1024 * 1024 }
-  );
+  const textOutput = execNode('dist/dump-text.js --input=.tmp-chart.json', CALCULATOR_DIR);
   fs.unlinkSync(tmpJsonPath);
 
   return { json: chart, text: textOutput };
@@ -68,9 +72,9 @@ export function renderPosterHTML(
   fs.writeFileSync(tmpChartPath, JSON.stringify(chartJson), 'utf-8');
   fs.writeFileSync(tmpAnalysisPath, JSON.stringify(analysisJson), 'utf-8');
 
-  const html = execSync(
-    `node dist/render.js --chart=.tmp-poster-chart.json --analysis=.tmp-poster-analysis.json --template=${templatePath} --currentYear=${currentYear}`,
-    { cwd: CALCULATOR_DIR, encoding: 'utf-8', maxBuffer: 1024 * 1024 }
+  const html = execNode(
+    `dist/render.js --chart=.tmp-poster-chart.json --analysis=.tmp-poster-analysis.json --template=${templatePath} --currentYear=${currentYear}`,
+    CALCULATOR_DIR
   );
 
   fs.unlinkSync(tmpChartPath);
