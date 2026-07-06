@@ -191,6 +191,12 @@ export default function ResultPage() {
             <p className="text-xs text-stone-400">
               AI-powered analysis of your Bazi & Ziwei chart
             </p>
+            <p className="text-xs text-stone-300">
+              By purchasing you agree to our{" "}
+              <Link href="/terms" className="underline hover:text-stone-400">Terms</Link>
+              {" · "}
+              <Link href="/refund" className="underline hover:text-stone-400">7-Day Refund Policy</Link>
+            </p>
           </div>
         ) : analysisLoading ? (
           <div className="flex items-center gap-3 text-stone-500 py-12 justify-center">

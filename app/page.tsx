@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const SHI_CHEN = [
   { label: "Zi (23:00-01:00)", hour: 0 },
@@ -162,8 +163,16 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="text-center pb-8 text-xs text-stone-400">
-        For cultural and entertainment purposes only · Not professional advice
+      <footer className="text-center pb-8 px-4 space-y-2">
+        <div className="flex justify-center gap-4 text-xs text-stone-400">
+          <Link href="/terms" className="hover:text-stone-600 underline">Terms</Link>
+          <Link href="/privacy" className="hover:text-stone-600 underline">Privacy</Link>
+          <Link href="/refund" className="hover:text-stone-600 underline">Refunds</Link>
+          <Link href="/disclaimer" className="hover:text-stone-600 underline">Disclaimer</Link>
+        </div>
+        <p className="text-xs text-stone-400">
+          For entertainment purposes only · Not professional advice
+        </p>
       </footer>
     </main>
   );
