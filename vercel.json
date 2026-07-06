@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "app/api/chart/route.ts": {
+      "includeFiles": "calculator/dist/**"
+    },
+    "app/api/poster-image/route.ts": {
+      "includeFiles": "calculator/dist/** templates/**"
+    }
+  }
+}
