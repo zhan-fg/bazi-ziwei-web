@@ -20,8 +20,6 @@ const SHI_CHEN = [
 
 export default function HomePage() {
   const router = useRouter();
-  const [step, setStep] = useState<"form" | "generating" | "pay">("form");
-  const [chartId, setChartId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -33,7 +31,6 @@ export default function HomePage() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    setStep("generating");
 
     try {
       const res = await fetch("/api/chart", {
@@ -50,30 +47,7 @@ export default function HomePage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate chart");
 
-      setChartId(data.id);
-      setStep("pay");
-    } catch (err: any) {
-      setError(err.message);
-      setStep("form");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handlePay = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chartId }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setError(data.error || "Payment failed");
-      }
+      router.push(`/result/${data.id}`);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -95,8 +69,9 @@ export default function HomePage() {
           Get your personalized Bazi (Four Pillars) & Ziwei (Purple Star) chart — a stunning poster you can share, plus a deep AI-powered reading.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-5 py-2 text-sm text-stone-500 shadow-sm">
-          <span className="text-amber-600 font-bold">$1.99</span>
-          <span>one-time · instant delivery</span>
+          <span className="text-amber-600 font-bold">Chart Free</span>
+          <span>·</span>
+          <span>AI Reading $1.99</span>
         </div>
       </section>
 
@@ -109,36 +84,15 @@ export default function HomePage() {
             </div>
           )}
 
-          {step === "generating" && (
+          {loading ? (
             <div className="text-center py-8">
               <svg className="animate-spin h-10 w-10 text-amber-600 mx-auto mb-4" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
               <p className="text-stone-600 font-medium">Calculating your chart...</p>
-              <p className="text-stone-400 text-sm mt-1">Aligning the stars for you</p>
             </div>
-          )}
-
-          {step === "pay" && (
-            <div className="text-center py-4">
-              <div className="text-4xl mb-4">🎴</div>
-              <h2 className="text-xl font-bold text-stone-800 mb-2">Your Chart is Ready</h2>
-              <p className="text-stone-500 text-sm mb-6">
-                Unlock your full Bazi & Ziwei reading with shareable poster
-              </p>
-              <button
-                onClick={handlePay}
-                disabled={loading}
-                className="w-full py-3 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-bold rounded-lg transition text-lg"
-              >
-                {loading ? "Redirecting..." : "Get Your Reading · $1.99"}
-              </button>
-              <p className="text-xs text-stone-400 mt-3">Secure payment via Stripe</p>
-            </div>
-          )}
-
-          {step === "form" && (
+          ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="text-center mb-2">
                 <h2 className="text-lg font-semibold text-stone-800">Enter Your Birth Details</h2>

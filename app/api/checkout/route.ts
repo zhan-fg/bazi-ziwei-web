@@ -11,7 +11,7 @@ function getStripe() {
 
 export async function POST(request: NextRequest) {
   try {
-    const { chartId } = await request.json();
+    const { chartId, type } = await request.json();
     if (!chartId) {
       return NextResponse.json({ error: 'Missing chartId' }, { status: 400 });
     }
@@ -20,8 +20,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'STRIPE_SECRET_KEY not configured' }, { status: 503 });
     }
 
+    const analysisLabel = type === 'bazi' ? 'Bazi Reading'
+      : type === 'ziwei' ? 'Ziwei Reading'
+      : type === 'combined' ? 'Combined Synthesis'
+      : 'Full Reading';
+
     const stripe = getStripe();
     const origin = request.nextUrl.origin;
+    const typeParam = type || 'bazi';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -30,15 +36,15 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'Bazi & Ziwei Destiny Chart',
-            description: 'Full Chinese astrology reading with shareable poster',
+            name: `${analysisLabel} — AI Destiny Analysis`,
+            description: 'Deep AI-powered Chinese astrology reading with personalized insights',
           },
-          unit_amount: 199, // $1.99
+          unit_amount: 199,
         },
         quantity: 1,
       }],
-      success_url: `${origin}/result/${chartId}?paid=true`,
-      cancel_url: `${origin}/?cancelled=true`,
+      success_url: `${origin}/result/${chartId}?paid=${typeParam}`,
+      cancel_url: `${origin}/result/${chartId}`,
     });
 
     return NextResponse.json({ url: session.url });
