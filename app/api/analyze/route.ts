@@ -39,9 +39,9 @@ export async function GET(request: NextRequest) {
   try {
     // Load the appropriate prompt
     const promptMap: Record<string, string> = {
-      bazi: 'bazi-prompt.md',
-      ziwei: 'ziwei-prompt.md',
-      combined: 'zonghe-yinzheng-prompt.md',
+      bazi: 'bazi-prompt-en.md',
+      ziwei: 'ziwei-prompt-en.md',
+      combined: 'zonghe-poster-en.md',
     };
     const promptFile = promptMap[type];
     if (!promptFile) {
