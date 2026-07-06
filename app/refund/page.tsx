@@ -10,14 +10,14 @@ export default function RefundPage() {
       <div className="prose prose-stone max-w-none text-sm leading-relaxed space-y-6">
         <section>
           <h2 className="text-base font-semibold text-stone-800">Our Guarantee</h2>
-          <p>We stand behind our service. If you are not satisfied with your AI reading, we offer a straightforward refund process. Our goal is to make this risk-free for you.</p>
+          <p>We stand behind our service. If you are not satisfied with your professional reading, we offer a straightforward refund process.</p>
         </section>
 
         <section>
           <h2 className="text-base font-semibold text-stone-800">Eligibility</h2>
           <p>You may request a full refund within <strong>7 days</strong> of purchase if:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>The AI reading failed to generate (technical error)</li>
+            <li>The reading failed to generate (technical error)</li>
             <li>The reading content is materially different from what was advertised</li>
             <li>You are unsatisfied with the quality of the reading for any reason</li>
           </ul>
@@ -40,7 +40,7 @@ export default function RefundPage() {
 
         <section>
           <h2 className="text-base font-semibold text-stone-800">Free Chart Generation</h2>
-          <p>Basic chart generation and poster viewing are completely free and do not involve any payment. The refund policy applies only to purchased AI readings.</p>
+          <p>Basic chart generation and poster viewing are completely free and do not involve any payment. The refund policy applies only to purchased readings.</p>
         </section>
 
         <section>

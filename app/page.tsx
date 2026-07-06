@@ -67,12 +67,10 @@ export default function HomePage() {
           Ancient Chinese astrology meets modern design
         </p>
         <p className="text-sm text-stone-400 max-w-md mx-auto">
-          Get your personalized Bazi (Four Pillars) & Ziwei (Purple Star) chart — a stunning poster you can share, plus a deep AI-powered reading.
+          Get your personalized Bazi (Four Pillars) & Ziwei (Purple Star) chart — a beautifully designed destiny poster to keep and share.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 bg-white border border-stone-200 rounded-full px-5 py-2 text-sm text-stone-500 shadow-sm">
-          <span className="text-amber-600 font-bold">Chart Free</span>
-          <span>·</span>
-          <span>AI Reading $1.99</span>
+          <span className="text-amber-600 font-bold">快来获取你的命运之盘</span>
         </div>
       </section>
 

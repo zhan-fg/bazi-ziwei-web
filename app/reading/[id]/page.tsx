@@ -210,7 +210,7 @@ export default function ReadingPage() {
       </Card>
 
       {/* LLM Analysis */}
-      <Card title="AI 深度解读">
+      <Card title="专业命理解读">
         <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => runLLM('bazi')}
@@ -259,7 +259,7 @@ export default function ReadingPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            AI 正在生成{llmType === 'bazi' ? '八字' : llmType === 'ziwei' ? '紫微' : '综合'}解读，请稍候...
+            正在生成{llmType === 'bazi' ? '八字' : llmType === 'ziwei' ? '紫微' : '综合'}解读，请稍候...
           </div>
         )}
 
@@ -271,7 +271,7 @@ export default function ReadingPage() {
 
         {!llmText && !llmLoading && !llmError && (
           <p className="text-stone-400 text-sm">
-            点击上方按钮，AI 将根据命盘数据为你生成深度解读报告（需配置 LLM_API_KEY）。
+            点击上方按钮，将根据命盘数据为你生成深度解读报告（需配置 LLM_API_KEY）。
           </p>
         )}
       </Card>

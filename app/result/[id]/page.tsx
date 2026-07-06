@@ -191,7 +191,7 @@ export default function ResultPage() {
               onClick={handlePay}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
             >
-              Unlock Full Reading · $1.99
+              Unlock Professional Analysis · $1.99
             </button>
             <p className="text-xs text-stone-400">
               Secure payment via Gumroad
