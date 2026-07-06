@@ -14,7 +14,10 @@ export default function ReadingPage() {
 
   useEffect(() => {
     fetch(`/api/reading?id=${id}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`Server error (${res.status})`);
+        return res.json();
+      })
       .then((d) => {
         if (d.error) throw new Error(d.error);
         setData(d);

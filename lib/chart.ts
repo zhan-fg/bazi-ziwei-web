@@ -2,16 +2,21 @@ import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 
-// Create a require function that resolves from the calculator dist directory.
-// This ensures lunar-typescript (installed in root node_modules) is found
-// via Node's standard upward module resolution.
 const CALCULATOR_DIST = path.join(process.cwd(), 'calculator', 'dist');
-const calRequire = createRequire(path.join(CALCULATOR_DIST, 'run-chart.js'));
 
-// Dynamically load calculator modules in-process (no child_process needed)
-const yiqiCore: any = calRequire('./yiqi-core/index');
-const baziMod: any = calRequire('./yiqi-core/bazi');
-const enrichMod: any = calRequire('./bazi-enrich/enrich');
+let _yiqiCore: any = null;
+let _baziMod: any = null;
+let _enrichMod: any = null;
+
+function getCalculatorModules() {
+  if (!_yiqiCore) {
+    const calRequire = createRequire(path.join(CALCULATOR_DIST, 'run-chart.js'));
+    _yiqiCore = calRequire('./yiqi-core/index');
+    _baziMod = calRequire('./yiqi-core/bazi');
+    _enrichMod = calRequire('./bazi-enrich/enrich');
+  }
+  return { yiqiCore: _yiqiCore, baziMod: _baziMod, enrichMod: _enrichMod };
+}
 
 export interface ChartResult {
   json: any;
@@ -28,6 +33,7 @@ export function runChart(birthInfo: {
   isLunar?: boolean;
 }): ChartResult {
   // Step 1: Yiqi algorithm layer — Bazi + Ziwei + Dayun + Liunian
+  const { yiqiCore, baziMod, enrichMod } = getCalculatorModules();
   const chart: any = yiqiCore.createChart({
     year: birthInfo.year,
     month: birthInfo.month,
@@ -78,8 +84,8 @@ export function renderPosterHTML(
   analysisJson: any,
   currentYear: number
 ): string {
-  // In-process rendering: the render.js module reads chart + analysis JSON and
-  // a template HTML file, then does {{key}} placeholder replacement
+  // In-process rendering: load render.js via createRequire
+  const calRequire = createRequire(path.join(CALCULATOR_DIST, 'run-chart.js'));
   const renderMod: any = calRequire('./render');
   const templatePath = path.join(process.cwd(), 'templates', 'report-zonghe-poster.html');
   const template = fs.readFileSync(templatePath, 'utf-8');

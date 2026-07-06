@@ -51,8 +51,8 @@ export default function BirthForm() {
         }),
       });
 
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to generate chart");
 
       router.push(`/reading/${data.id}`);
     } catch (err: any) {

@@ -15,7 +15,7 @@ export default function PosterPage() {
   useEffect(() => {
     fetch(`/api/poster-image?id=${id}`)
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load poster");
+        if (!res.ok) throw new Error(`Server error (${res.status})`);
         return res.text();
       })
       .then((html) => {
