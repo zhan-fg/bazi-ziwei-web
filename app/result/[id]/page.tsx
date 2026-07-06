@@ -99,14 +99,19 @@ export default function ResultPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chartId: id, type: "combined" }),
+        body: JSON.stringify({ chartId: id }),
       });
       const d = await res.json();
-      if (d.url) window.location.href = d.url;
-      else alert(d.error || "Payment failed");
+      if (d.url) window.open(d.url, "_blank");
+      else throw new Error(d.error || "Payment failed");
     } catch (err: any) {
       alert(err.message);
     }
+  };
+
+  const handleManualUnlock = () => {
+    setUnlocked(true);
+    if (!analysis && !analysisLoading) runAnalysis();
   };
 
   const handleDownload = () => {
@@ -181,7 +186,7 @@ export default function ResultPage() {
       {/* Analysis section */}
       <div className="max-w-3xl mx-auto px-4 py-8">
         {!unlocked ? (
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-3">
             <button
               onClick={handlePay}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
@@ -189,14 +194,17 @@ export default function ResultPage() {
               Unlock Full Reading · $1.99
             </button>
             <p className="text-xs text-stone-400">
-              AI-powered analysis of your Bazi & Ziwei chart
+              Secure payment via Gumroad
             </p>
-            <p className="text-xs text-stone-300">
-              By purchasing you agree to our{" "}
-              <Link href="/terms" className="underline hover:text-stone-400">Terms</Link>
-              {" · "}
-              <Link href="/refund" className="underline hover:text-stone-400">7-Day Refund Policy</Link>
-            </p>
+            <div className="pt-2 border-t border-stone-100">
+              <p className="text-xs text-stone-300 mb-2">Already paid?</p>
+              <button
+                onClick={handleManualUnlock}
+                className="text-amber-600 hover:text-amber-700 text-sm underline font-medium"
+              >
+                I've paid — unlock now
+              </button>
+            </div>
           </div>
         ) : analysisLoading ? (
           <div className="flex items-center gap-3 text-stone-500 py-12 justify-center">
