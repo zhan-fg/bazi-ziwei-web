@@ -2,12 +2,34 @@ import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 
-const CALCULATOR_DIR = path.join(process.cwd(), 'calculator');
-const TEMPLATE_PATH = path.join(process.cwd(), 'templates', 'report-zonghe-poster.html');
+const CWD = process.cwd();
+const CALCULATOR_DIR = path.join(CWD, 'calculator');
+const TEMPLATE_PATH = path.join(CWD, 'templates', 'report-zonghe-poster.html');
+const DEBUG = process.env.DEBUG === '1';
+
+function log(msg: string) {
+  if (DEBUG) console.error(`[chart.ts] ${msg}`);
+}
 
 function execCalc(cmd: string): string {
+  const fullCmd = `node ${cmd}`;
+  log(`exec: ${fullCmd}`);
+  log(`cwd: ${CALCULATOR_DIR}`);
+  log(`cwd exists: ${fs.existsSync(CALCULATOR_DIR)}`);
+
+  // Pre-flight: check that key files exist
+  const distDir = path.join(CALCULATOR_DIR, 'dist');
+  log(`dist exists: ${fs.existsSync(distDir)}`);
+  if (fs.existsSync(distDir)) {
+    log(`dist files: ${fs.readdirSync(distDir).join(', ')}`);
+  }
+  const nmDir = path.join(CALCULATOR_DIR, 'node_modules', 'lunar-typescript');
+  log(`lunar-typescript in calc: ${fs.existsSync(nmDir)}`);
+  const rootNm = path.join(CWD, 'node_modules', 'lunar-typescript');
+  log(`lunar-typescript in root: ${fs.existsSync(rootNm)}`);
+
   try {
-    return execSync(cmd, {
+    return execSync(fullCmd, {
       cwd: CALCULATOR_DIR,
       encoding: 'utf-8',
       maxBuffer: 1024 * 1024,
@@ -17,7 +39,16 @@ function execCalc(cmd: string): string {
   } catch (e: any) {
     const stderr = e.stderr?.toString() || '';
     const stdout = e.stdout?.toString() || '';
-    throw new Error(`Calculator error: ${stderr || stdout || e.message}`);
+    const msg = [
+      `[execCalc] command failed`,
+      `cmd: ${fullCmd}`,
+      `cwd: ${CALCULATOR_DIR}`,
+      `exit code: ${e.status}`,
+      `stderr: ${stderr.slice(-500)}`,
+      `stdout: ${stdout.slice(-200)}`,
+    ].join('\n');
+    console.error(msg);
+    throw new Error(stderr.trim() || stdout.trim() || e.message || 'execCalc failed');
   }
 }
 
@@ -45,18 +76,23 @@ export function runChart(birthInfo: {
   ];
   if (birthInfo.isLunar) args.push('--isLunar=true');
 
+  log(`runChart: ${JSON.stringify(birthInfo)}`);
+
   // Step 1: run-chart
-  const raw = execCalc(`node dist/run-chart.js ${args.join(' ')}`);
+  const raw = execCalc(`dist/run-chart.js ${args.join(' ')}`);
 
   const jsonStart = raw.indexOf('{');
   const jsonEnd = raw.lastIndexOf('}');
-  const clean = (jsonStart >= 0 && jsonEnd >= 0) ? raw.slice(jsonStart, jsonEnd + 1) : raw;
+  if (jsonStart < 0) {
+    throw new Error(`No JSON found in output. Raw output: ${raw.slice(0, 500)}`);
+  }
+  const clean = raw.slice(jsonStart, jsonEnd + 1);
   const chart = JSON.parse(clean);
 
   // Step 2: dump-text
   const tmpJson = path.join(CALCULATOR_DIR, '.tmp-chart.json');
   fs.writeFileSync(tmpJson, JSON.stringify(chart), 'utf-8');
-  const text = execCalc('node dist/dump-text.js --input=.tmp-chart.json');
+  const text = execCalc('dist/dump-text.js --input=.tmp-chart.json');
   fs.unlinkSync(tmpJson);
 
   return { json: chart, text };
@@ -74,7 +110,7 @@ export function renderPosterHTML(
   fs.writeFileSync(tmpAnalysis, JSON.stringify(analysisJson), 'utf-8');
 
   const html = execCalc(
-    `node dist/render.js --chart=.tmp-poster-chart.json --analysis=.tmp-poster-analysis.json --template=${TEMPLATE_PATH} --currentYear=${currentYear}`
+    `dist/render.js --chart=.tmp-poster-chart.json --analysis=.tmp-poster-analysis.json --template=${TEMPLATE_PATH} --currentYear=${currentYear}`
   );
 
   fs.unlinkSync(tmpChart);

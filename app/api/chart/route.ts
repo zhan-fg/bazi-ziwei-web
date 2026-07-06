@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runChart } from '@/lib/chart';
 import { saveChart, cleanupOldFiles } from '@/lib/storage';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +11,11 @@ export async function POST(request: NextRequest) {
     const { year, month, day, hour, minute, gender, isLunar } = body;
 
     if (!year || !month || !day || hour === undefined || minute === undefined || !gender) {
-      return NextResponse.json({ error: 'Missing required fields: year, month, day, hour, minute, gender' }, { status: 400 });
+      return NextResponse.json({
+        error: 'Missing required fields',
+        required: 'year, month, day, hour, minute, gender',
+        received: { year, month, day, hour, minute, gender },
+      }, { status: 400 });
     }
 
     const birthInfo = {
@@ -33,15 +39,31 @@ export async function POST(request: NextRequest) {
       createdAt: Date.now(),
     });
 
-    // Cleanup in background (non-blocking)
     setTimeout(() => cleanupOldFiles(), 100);
 
-    return NextResponse.json({
-      id,
-      chart: result.json,
-    });
+    return NextResponse.json({ id, chart: result.json });
   } catch (err: any) {
-    console.error('Chart generation error:', err);
-    return NextResponse.json({ error: err.message || 'Failed to generate chart' }, { status: 500 });
+    const debug: any = {
+      error: err.message || 'Failed to generate chart',
+      stack: err.stack?.split('\n').slice(0, 5),
+      cwd: process.cwd(),
+      envNodeVersion: process.version,
+    };
+
+    // Add file existence checks
+    const cwd = process.cwd();
+    try {
+      debug['files'] = {
+        calcDist: fs.existsSync(path.join(cwd, 'calculator', 'dist', 'run-chart.js')),
+        calcLunar: fs.existsSync(path.join(cwd, 'calculator', 'node_modules', 'lunar-typescript')),
+        rootLunar: fs.existsSync(path.join(cwd, 'node_modules', 'lunar-typescript')),
+        calcDistDir: fs.existsSync(path.join(cwd, 'calculator', 'dist')),
+      };
+    } catch (_) {
+      debug['files'] = 'unable to check';
+    }
+
+    console.error('[chart API] error:', JSON.stringify(debug, null, 2));
+    return NextResponse.json(debug, { status: 500 });
   }
 }
