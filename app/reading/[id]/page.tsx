@@ -29,6 +29,27 @@ export default function ReadingPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
   const [showRaw, setShowRaw] = useState(false);
+  const [llmType, setLlmType] = useState<'bazi' | 'ziwei' | 'combined' | null>(null);
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [llmText, setLlmText] = useState('');
+  const [llmError, setLlmError] = useState('');
+
+  const runLLM = async (type: 'bazi' | 'ziwei' | 'combined') => {
+    setLlmType(type);
+    setLlmLoading(true);
+    setLlmError('');
+    setLlmText('');
+    try {
+      const res = await fetch(`/api/analyze?id=${id}&type=${type}`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'Analysis failed');
+      setLlmText(d.analysis);
+    } catch (err: any) {
+      setLlmError(err.message);
+    } finally {
+      setLlmLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetch(`/api/reading?id=${id}`)
@@ -186,6 +207,73 @@ export default function ReadingPage() {
             })}
           </div>
         </div>
+      </Card>
+
+      {/* LLM Analysis */}
+      <Card title="AI 深度解读">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button
+            onClick={() => runLLM('bazi')}
+            disabled={llmLoading}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              llmLoading && llmType === 'bazi'
+                ? 'bg-amber-200 text-amber-700 cursor-wait'
+                : 'bg-amber-600 text-white hover:bg-amber-700'
+            }`}
+          >
+            {llmLoading && llmType === 'bazi' ? '生成中...' : '八字解读'}
+          </button>
+          <button
+            onClick={() => runLLM('ziwei')}
+            disabled={llmLoading}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              llmLoading && llmType === 'ziwei'
+                ? 'bg-purple-200 text-purple-700 cursor-wait'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+            {llmLoading && llmType === 'ziwei' ? '生成中...' : '紫微解读'}
+          </button>
+          <button
+            onClick={() => runLLM('combined')}
+            disabled={llmLoading}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+              llmLoading && llmType === 'combined'
+                ? 'bg-stone-200 text-stone-700 cursor-wait'
+                : 'bg-stone-700 text-white hover:bg-stone-800'
+            }`}
+          >
+            {llmLoading && llmType === 'combined' ? '生成中...' : '综合印证'}
+          </button>
+        </div>
+
+        {llmError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+            {llmError}
+          </div>
+        )}
+
+        {llmLoading && (
+          <div className="flex items-center gap-3 text-stone-500 py-4">
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            AI 正在生成{llmType === 'bazi' ? '八字' : llmType === 'ziwei' ? '紫微' : '综合'}解读，请稍候...
+          </div>
+        )}
+
+        {llmText && (
+          <div className="prose prose-stone max-w-none text-sm leading-relaxed whitespace-pre-wrap">
+            {llmText}
+          </div>
+        )}
+
+        {!llmText && !llmLoading && !llmError && (
+          <p className="text-stone-400 text-sm">
+            点击上方按钮，AI 将根据命盘数据为你生成深度解读报告（需配置 LLM_API_KEY）。
+          </p>
+        )}
       </Card>
 
       {/* Raw text toggle */}
