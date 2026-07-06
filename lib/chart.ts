@@ -1,22 +1,18 @@
-import { createRequire } from 'module';
 import path from 'path';
 import fs from 'fs';
 
-const CALCULATOR_DIST = path.join(process.cwd(), 'calculator', 'dist');
+// Use direct relative require — Next.js traces and bundles these.
+// The ../ paths are relative to lib/ when bundled, but work at runtime
+// because Next.js includes the calculator/dist in the deployment.
 
-let _yiqiCore: any = null;
-let _baziMod: any = null;
-let _enrichMod: any = null;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const yiqiCore = require('../calculator/dist/yiqi-core/index');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const baziMod = require('../calculator/dist/yiqi-core/bazi');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const enrichMod = require('../calculator/dist/bazi-enrich/enrich');
 
-function getCalculatorModules() {
-  if (!_yiqiCore) {
-    const calRequire = createRequire(path.join(CALCULATOR_DIST, 'run-chart.js'));
-    _yiqiCore = calRequire('./yiqi-core/index');
-    _baziMod = calRequire('./yiqi-core/bazi');
-    _enrichMod = calRequire('./bazi-enrich/enrich');
-  }
-  return { yiqiCore: _yiqiCore, baziMod: _baziMod, enrichMod: _enrichMod };
-}
+const TEMPLATE_PATH = path.join(process.cwd(), 'templates', 'report-zonghe-poster.html');
 
 export interface ChartResult {
   json: any;
@@ -33,7 +29,6 @@ export function runChart(birthInfo: {
   isLunar?: boolean;
 }): ChartResult {
   // Step 1: Yiqi algorithm layer — Bazi + Ziwei + Dayun + Liunian
-  const { yiqiCore, baziMod, enrichMod } = getCalculatorModules();
   const chart: any = yiqiCore.createChart({
     year: birthInfo.year,
     month: birthInfo.month,
@@ -84,9 +79,8 @@ export function renderPosterHTML(
   analysisJson: any,
   currentYear: number
 ): string {
-  // In-process rendering: load render.js via createRequire
-  const calRequire = createRequire(path.join(CALCULATOR_DIST, 'run-chart.js'));
-  const renderMod: any = calRequire('./render');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const renderMod = require('../calculator/dist/render');
   const templatePath = path.join(process.cwd(), 'templates', 'report-zonghe-poster.html');
   const template = fs.readFileSync(templatePath, 'utf-8');
 

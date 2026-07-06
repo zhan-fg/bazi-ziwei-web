@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node -e \"const fs=require('fs');const p=require('path');const s=p.join('node_modules','lunar-typescript');const d=p.join('calculator','node_modules','lunar-typescript');fs.cpSync(s,d,{recursive:true})\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
