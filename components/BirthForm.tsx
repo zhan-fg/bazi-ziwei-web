@@ -51,8 +51,11 @@ export default function BirthForm() {
         }),
       });
 
-      if (!res.ok) throw new Error(`Server error (${res.status})`);
       const data = await res.json();
+      if (!res.ok) {
+        const detail = data.error || data.message || JSON.stringify(data);
+        throw new Error(detail);
+      }
 
       router.push(`/reading/${data.id}`);
     } catch (err: any) {
