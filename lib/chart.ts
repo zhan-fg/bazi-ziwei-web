@@ -1,10 +1,12 @@
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 
 const CWD = process.cwd();
 const CALCULATOR_DIR = path.join(CWD, 'calculator');
 const TEMPLATE_PATH = path.join(CWD, 'templates', 'report-zonghe-poster.html');
+const TMP = os.tmpdir();
 const DEBUG = process.env.DEBUG === '1';
 
 function log(msg: string) {
@@ -89,10 +91,10 @@ export function runChart(birthInfo: {
   const clean = raw.slice(jsonStart, jsonEnd + 1);
   const chart = JSON.parse(clean);
 
-  // Step 2: dump-text
-  const tmpJson = path.join(CALCULATOR_DIR, '.tmp-chart.json');
+  // Step 2: dump-text — write chart to /tmp, pass absolute path
+  const tmpJson = path.join(TMP, `.chart-${Date.now()}.json`);
   fs.writeFileSync(tmpJson, JSON.stringify(chart), 'utf-8');
-  const text = execCalc('dist/dump-text.js --input=.tmp-chart.json');
+  const text = execCalc(`dist/dump-text.js --input=${tmpJson}`);
   fs.unlinkSync(tmpJson);
 
   return { json: chart, text };
@@ -103,14 +105,14 @@ export function renderPosterHTML(
   analysisJson: any,
   currentYear: number
 ): string {
-  const tmpChart = path.join(CALCULATOR_DIR, '.tmp-poster-chart.json');
-  const tmpAnalysis = path.join(CALCULATOR_DIR, '.tmp-poster-analysis.json');
+  const tmpChart = path.join(TMP, `.poster-chart-${Date.now()}.json`);
+  const tmpAnalysis = path.join(TMP, `.poster-analysis-${Date.now()}.json`);
 
   fs.writeFileSync(tmpChart, JSON.stringify(chartJson), 'utf-8');
   fs.writeFileSync(tmpAnalysis, JSON.stringify(analysisJson), 'utf-8');
 
   const html = execCalc(
-    `dist/render.js --chart=.tmp-poster-chart.json --analysis=.tmp-poster-analysis.json --template=${TEMPLATE_PATH} --currentYear=${currentYear}`
+    `dist/render.js --chart=${tmpChart} --analysis=${tmpAnalysis} --template=${TEMPLATE_PATH} --currentYear=${currentYear}`
   );
 
   fs.unlinkSync(tmpChart);
