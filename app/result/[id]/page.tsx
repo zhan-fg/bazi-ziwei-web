@@ -109,6 +109,14 @@ export default function ResultPage() {
     }
   };
 
+  const handleDownload = () => {
+    if (!posterImg) return;
+    const a = document.createElement("a");
+    a.download = `bazi-ziwei-chart-${id}.png`;
+    a.href = posterImg;
+    a.click();
+  };
+
   if (loading) return <LoadingSpinner message="Generating your chart..." />;
   if (error) {
     return (
@@ -139,6 +147,14 @@ export default function ResultPage() {
 
       {/* Poster image — zoomable on mobile */}
       <div className="relative bg-stone-100">
+        {posterImg && (
+          <button
+            onClick={handleDownload}
+            className="absolute top-3 right-3 z-10 bg-stone-800/80 hover:bg-stone-900 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition"
+          >
+            ↓ Save
+          </button>
+        )}
         {/* Hidden div for html2canvas rendering */}
         <div
           ref={posterContainerRef}
