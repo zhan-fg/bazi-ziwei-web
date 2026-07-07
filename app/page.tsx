@@ -5,18 +5,18 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const SHI_CHEN = [
-  { label: "子时 (23:00-01:00)", hour: 0 },
-  { label: "丑时 (01:00-03:00)", hour: 2 },
-  { label: "寅时 (03:00-05:00)", hour: 4 },
-  { label: "卯时 (05:00-07:00)", hour: 6 },
-  { label: "辰时 (07:00-09:00)", hour: 8 },
-  { label: "巳时 (09:00-11:00)", hour: 10 },
-  { label: "午时 (11:00-13:00)", hour: 12 },
-  { label: "未时 (13:00-15:00)", hour: 14 },
-  { label: "申时 (15:00-17:00)", hour: 16 },
-  { label: "酉时 (17:00-19:00)", hour: 18 },
-  { label: "戌时 (19:00-21:00)", hour: 20 },
-  { label: "亥时 (21:00-23:00)", hour: 22 },
+  { label: "Zi (23:00-01:00)", hour: 0 },
+  { label: "Chou (01:00-03:00)", hour: 2 },
+  { label: "Yin (03:00-05:00)", hour: 4 },
+  { label: "Mao (05:00-07:00)", hour: 6 },
+  { label: "Chen (07:00-09:00)", hour: 8 },
+  { label: "Si (09:00-11:00)", hour: 10 },
+  { label: "Wu (11:00-13:00)", hour: 12 },
+  { label: "Wei (13:00-15:00)", hour: 14 },
+  { label: "Shen (15:00-17:00)", hour: 16 },
+  { label: "You (17:00-19:00)", hour: 18 },
+  { label: "Xu (19:00-21:00)", hour: 20 },
+  { label: "Hai (21:00-23:00)", hour: 22 },
 ];
 
 export default function HomePage() {
