@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>{{meta.archetype_name}} · 综合印证报告</title>
+<title>{{meta.archetype_name}} · Destiny Chart Report</title>
 <style>
   :root {
     --paper: #f5f1e8;
@@ -268,7 +268,7 @@
   }
   .palace.ming { box-shadow: inset 0 0 0 2px var(--vermillion); }
   .palace.ming .p-gong { color: var(--vermillion); }
-  /* 身宫: 宫名后的内联小徽标, 不绝对定位, 不遮挡内容 */
+  /* body: 宫名后的内联小徽标, 不绝对定位, 不遮挡内容 */
   .shen-badge {
     display: inline-block; margin-left: 3px;
     color: var(--vermillion); border: 1px solid var(--vermillion);
@@ -394,7 +394,7 @@
   .strip-cell .ages { color: var(--ink-soft); }
   .strip-cell .ss { font-size: 8px; color: var(--ink-faint); margin-top: 1px; }
   .strip-cell.current.dayun::after {
-    content: "当前"; display: block;
+    content: "Current"; display: block;
     color: var(--vermillion); font-size: 9px; margin-top: 1px;
   }
 
@@ -552,20 +552,20 @@
   <header class="header">
     <div class="seal">命理<br>印证</div>
     <div class="title-block">
-      <div style="font-size:10px;color:var(--ink-soft);letter-spacing:2px;margin-bottom:4px">综合印证报告</div>
+      <div style="font-size:10px;color:var(--ink-soft);letter-spacing:2px;margin-bottom:4px">Destiny Chart Report</div>
       <h1>{{meta.archetype_name}}</h1>
       <div class="subtitle">{{meta.axis_oneliner}}</div>
     </div>
     <div class="header-right">
-      <div class="gen-time">生成时间：<span class="num">{{meta.gen_time}}</span></div>
-      <div>综合印证评级</div>
+      <div class="gen-time">Generated: <span class="num">{{meta.gen_time}}</span></div>
+      <div>Cross-Verification</div>
       <div class="badge-grade">✓ {{ziwei.consistency}}</div>
       <div class="meta-row">
-        <span>命主星：<b>{{ziwei.ming_zhu}}</b></span>
-        <span>身主星：<b>{{ziwei.shen_zhu}}</b></span>
+        <span>Life Lord: <b>{{ziwei.ming_zhu}}</b></span>
+        <span>Body Lord: <b>{{ziwei.shen_zhu}}</b></span>
       </div>
       <div class="meta-row">
-        <span>子年斗君：<b>{{ziwei.zi_dou_jun}}</b></span>
+        <span>Annual Lord: <b>{{ziwei.zi_dou_jun}}</b></span>
         <span>{{ziwei.wuxing_ju}}</span>
       </div>
     </div>
@@ -576,36 +576,36 @@
 
     <!-- left info card -->
     <div class="info-card">
-      <div class="row"><span class="icon">☉</span><span class="key">阳历</span><span class="val num">{{meta.solar_date}}</span></div>
-      <div class="row"><span class="icon">☽</span><span class="key">农历</span><span class="val">{{meta.lunar_date}}</span></div>
-      <div class="row"><span class="icon">⚧</span><span class="key">性别</span><span class="val">{{meta.gender_full}}</span></div>
-      <div class="row"><span class="icon">⌛</span><span class="key">年龄</span><span class="val">虚岁 <span class="num">{{meta.age_virtual}}</span>（截至 <span class="num">{{meta.current_year}}</span>）</span></div>
+      <div class="row"><span class="icon">☉</span><span class="key">Solar</span><span class="val num">{{meta.solar_date}}</span></div>
+      <div class="row"><span class="icon">☽</span><span class="key">Lunar</span><span class="val">{{meta.lunar_date}}</span></div>
+      <div class="row"><span class="icon">⚧</span><span class="key">Gender</span><span class="val">{{meta.gender_full}}</span></div>
+      <div class="row"><span class="icon">⌛</span><span class="key">Age</span><span class="val">virtual age <span class="num">{{meta.age_virtual}}</span>（as of <span class="num">{{meta.current_year}}</span>）</span></div>
     </div>
 
     <!-- right block: axes + strengths -->
     <div class="right-block">
       <div class="axes-block">
-        <div class="section-title">两盘主轴印证</div>
+        <div class="section-title">Cross-System Alignment</div>
         <div class="axes-row">
           <div class="axis-box">
-            <div class="label">八字主轴</div>
+            <div class="label">Bazi Axis</div>
             <div class="text">{{axes.bazi_main}}</div>
           </div>
           <div class="axis-box">
-            <div class="label">紫微主轴</div>
+            <div class="label">Ziwei Axis</div>
             <div class="text">{{axes.ziwei_main}}</div>
           </div>
         </div>
       </div>
       <div class="strengths-block">
         <div class="strength-side">
-          <h4>★ 三大优势</h4>
+          <h4>★ Key Strengths</h4>
           <div class="item"><span class="star">★</span><div><span class="t">{{strengths.0.title}}</span><span class="d">{{strengths.0.desc}}</span></div></div>
           <div class="item"><span class="star">★</span><div><span class="t">{{strengths.1.title}}</span><span class="d">{{strengths.1.desc}}</span></div></div>
           <div class="item"><span class="star">★</span><div><span class="t">{{strengths.2.title}}</span><span class="d">{{strengths.2.desc}}</span></div></div>
         </div>
         <div class="weakness-side">
-          <h4>⊗ 三大隐忧</h4>
+          <h4>⊗ Areas to Watch</h4>
           <div class="item"><span class="x">⊗</span><div><span class="t">{{weaknesses.0.title}}</span><span class="d">{{weaknesses.0.desc}}</span></div></div>
           <div class="item"><span class="x">⊗</span><div><span class="t">{{weaknesses.1.title}}</span><span class="d">{{weaknesses.1.desc}}</span></div></div>
           <div class="item"><span class="x">⊗</span><div><span class="t">{{weaknesses.2.title}}</span><span class="d">{{weaknesses.2.desc}}</span></div></div>
@@ -616,38 +616,38 @@
 
   <!-- ============ CORE DATA (full-width row) ============ -->
   <div class="core-data-row">
-    <div class="section-title">命盘核心数据</div>
+    <div class="section-title">Chart Core Data</div>
     <div class="core-data">
       <div class="data-card">
         <div class="info-i">ⓘ</div>
-        <div class="label">格局</div>
+        <div class="label">Structure</div>
         <div class="value">{{core.geju}}</div>
-        <div class="conf">置信度：{{core.geju_confidence}}</div>
+        <div class="conf"Confidence: {{core.geju_confidence}}</div>
       </div>
       <div class="data-card">
         <div class="info-i">ⓘ</div>
-        <div class="label">旺衰</div>
+        <div class="label">Strength</div>
         <div class="value">{{core.wangshuai_verdict}}</div>
         <div class="score num">{{core.wangshuai_score}}</div>
         <div class="slider">
           <div class="slider-mark" style="left:{{core.wangshuai_pos_pct}}%"></div>
         </div>
-        <div class="slider-labels"><span>弱</span><span>中</span><span>旺</span></div>
+        <div class="slider-labels"><span>Weak</span><span>中</span><span>Strong</span></div>
       </div>
       <div class="data-card">
         <div class="info-i">ⓘ</div>
-        <div class="label">调候用神</div>
+        <div class="label">Seasonal Needs</div>
         <div class="value-tiaohou" style="margin-top:6px"><span>{{core.tiaohou.0}}</span><span>{{core.tiaohou.1}}</span></div>
-        <div class="conf" style="margin-top:8px">置信度：{{core.tiaohou_confidence}}</div>
+        <div class="conf" style="margin-top:8px"Confidence: {{core.tiaohou_confidence}}</div>
       </div>
       <div class="data-card">
-        <div class="label">月令旺相</div>
+        <div class="label">Monthly Element</div>
         <div class="yueling" style="margin-top:8px">
           <span class="tag">水{{core.yueling.水}}</span>·<span class="tag">木{{core.yueling.木}}</span>·<span class="tag">金{{core.yueling.金}}</span>·<span class="tag">土{{core.yueling.土}}</span>·<span class="tag">火{{core.yueling.火}}</span>
         </div>
       </div>
       <div class="data-card">
-        <div class="label">五行统计（含藏干）</div>
+        <div class="label">Five Elements (incl. hidden stems)</div>
         <div class="wx-bars">
           <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.木}}%;background:var(--jade)"></div><div class="name">木</div><div class="num-val num">{{core.wuxing.木}}</div></div>
           <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.火}}%;background:var(--vermillion)"></div><div class="name">火</div><div class="num-val num">{{core.wuxing.火}}</div></div>
@@ -782,58 +782,58 @@
       <div class="bazi-body">
         <div class="bazi-pillars">
           <div class="b-col">
-            <div class="b-head">年柱</div>
+            <div class="b-head">Year</div>
             <div class="b-shishen">{{bazi.year.shiShen}}</div>
             <div class="b-gan">{{bazi.year.gan}}</div>
             <div class="b-zhi">{{bazi.year.zhi}}</div>
             <div class="b-canggan">{{bazi.year.cangGanHtml}}</div>
             <div class="b-extra">
-              <div class="b-extra-row"><span class="ek">星运</span><span>{{bazi.year.zhangSheng}}</span></div>
-              <div class="b-extra-row"><span class="ek">自坐</span><span>{{bazi.year.ziZuo}}</span></div>
-              <div class="b-extra-row"><span class="ek">纳音</span><span>{{bazi.year.naYin}}</span></div>
+              <div class="b-extra-row"><span class="ek">Phase</span><span>{{bazi.year.zhangSheng}}</span></div>
+              <div class="b-extra-row"><span class="ek">Position</span><span>{{bazi.year.ziZuo}}</span></div>
+              <div class="b-extra-row"><span class="ek">Nayin</span><span>{{bazi.year.naYin}}</span></div>
             </div>
           </div>
           <div class="b-col">
-            <div class="b-head">月柱</div>
+            <div class="b-head">Month</div>
             <div class="b-shishen">{{bazi.month.shiShen}}</div>
             <div class="b-gan">{{bazi.month.gan}}</div>
             <div class="b-zhi">{{bazi.month.zhi}}</div>
             <div class="b-canggan">{{bazi.month.cangGanHtml}}</div>
             <div class="b-extra">
-              <div class="b-extra-row"><span class="ek">星运</span><span>{{bazi.month.zhangSheng}}</span></div>
-              <div class="b-extra-row"><span class="ek">自坐</span><span>{{bazi.month.ziZuo}}</span></div>
-              <div class="b-extra-row"><span class="ek">纳音</span><span>{{bazi.month.naYin}}</span></div>
+              <div class="b-extra-row"><span class="ek">Phase</span><span>{{bazi.month.zhangSheng}}</span></div>
+              <div class="b-extra-row"><span class="ek">Position</span><span>{{bazi.month.ziZuo}}</span></div>
+              <div class="b-extra-row"><span class="ek">Nayin</span><span>{{bazi.month.naYin}}</span></div>
             </div>
           </div>
           <div class="b-col">
-            <div class="b-head">日柱</div>
-            <div class="b-shishen dayMaster">日主</div>
+            <div class="b-head">Day</div>
+            <div class="b-shishen dayMaster">Day Master</div>
             <div class="b-gan">{{bazi.day.gan}}</div>
             <div class="b-zhi">{{bazi.day.zhi}}</div>
             <div class="b-canggan">{{bazi.day.cangGanHtml}}</div>
             <div class="b-extra">
-              <div class="b-extra-row"><span class="ek">星运</span><span>{{bazi.day.zhangSheng}}</span></div>
-              <div class="b-extra-row"><span class="ek">自坐</span><span>{{bazi.day.ziZuo}}</span></div>
-              <div class="b-extra-row"><span class="ek">纳音</span><span>{{bazi.day.naYin}}</span></div>
+              <div class="b-extra-row"><span class="ek">Phase</span><span>{{bazi.day.zhangSheng}}</span></div>
+              <div class="b-extra-row"><span class="ek">Position</span><span>{{bazi.day.ziZuo}}</span></div>
+              <div class="b-extra-row"><span class="ek">Nayin</span><span>{{bazi.day.naYin}}</span></div>
             </div>
           </div>
           <div class="b-col">
-            <div class="b-head">时柱</div>
+            <div class="b-head">Hour</div>
             <div class="b-shishen">{{bazi.hour.shiShen}}</div>
             <div class="b-gan">{{bazi.hour.gan}}</div>
             <div class="b-zhi">{{bazi.hour.zhi}}</div>
             <div class="b-canggan">{{bazi.hour.cangGanHtml}}</div>
             <div class="b-extra">
-              <div class="b-extra-row"><span class="ek">星运</span><span>{{bazi.hour.zhangSheng}}</span></div>
-              <div class="b-extra-row"><span class="ek">自坐</span><span>{{bazi.hour.ziZuo}}</span></div>
-              <div class="b-extra-row"><span class="ek">纳音</span><span>{{bazi.hour.naYin}}</span></div>
+              <div class="b-extra-row"><span class="ek">Phase</span><span>{{bazi.hour.zhangSheng}}</span></div>
+              <div class="b-extra-row"><span class="ek">Position</span><span>{{bazi.hour.ziZuo}}</span></div>
+              <div class="b-extra-row"><span class="ek">Nayin</span><span>{{bazi.hour.naYin}}</span></div>
             </div>
           </div>
         </div>
 
         <!-- DAYUN -->
         <div class="dayun-strip">
-          <div class="strip-head">大运 <span class="small">(起运 {{bazi.dayunStart}} 岁)</span></div>
+          <div class="strip-head">Luck Cycles <span class="small">(starting age {{bazi.dayunStart}} 岁)</span></div>
           <div class="strip-row">
             <div class="strip-cell {{dayun.0.current_class}}"><div class="gz">{{dayun.0.gz}}</div><div class="ages num">{{dayun.0.age_range}}</div><div class="ss">{{dayun.0.shishen}}</div></div>
             <div class="strip-cell {{dayun.1.current_class}}"><div class="gz">{{dayun.1.gz}}</div><div class="ages num">{{dayun.1.age_range}}</div><div class="ss">{{dayun.1.shishen}}</div></div>
@@ -850,7 +850,7 @@
 
         <!-- LIUNIAN -->
         <div class="liunian-strip">
-          <div class="strip-head">流年 <span class="small">(当前大运：{{liunian_dayun_label}})</span></div>
+          <div class="strip-head">Annual Influences <span class="small">(Current大运：{{liunian_dayun_label}})</span></div>
           <div class="strip-row">
             <div class="strip-cell {{liunian.0.current_class}}"><div class="ages num">{{liunian.0.year}}</div><div class="ages num">{{liunian.0.age}}</div><div class="gz">{{liunian.0.gz}}</div><div class="ss">{{liunian.0.shishen}}</div></div>
             <div class="strip-cell {{liunian.1.current_class}}"><div class="ages num">{{liunian.1.year}}</div><div class="ages num">{{liunian.1.age}}</div><div class="gz">{{liunian.1.gz}}</div><div class="ss">{{liunian.1.shishen}}</div></div>
@@ -871,25 +871,25 @@
   <!-- ============ NUMBERED SECTIONS ============ -->
 
   <div class="row-2col">
-    <!-- 01 主轴印证结论 -->
+    <!-- 01 Axis Alignment -->
     <section class="section">
-      <h2><span class="num-box">01</span>主轴印证结论</h2>
+      <h2><span class="num-box">01</span>Axis Alignment</h2>
       <div class="axis-conclusion">
         {{section_01.text}}
-        <div class="wc">字数：{{section_01.word_count}}</div>
+        <div class="wc">Words: {{section_01.word_count}}</div>
       </div>
     </section>
 
-    <!-- 02 阶段印证时间轴 -->
+    <!-- 02 Life Stage Alignment -->
     <section class="section">
-      <h2><span class="num-box">02</span>阶段印证时间轴 <small style="font-size:11px;color:var(--ink-soft);font-weight:normal">（水平双轨）</small></h2>
+      <h2><span class="num-box">02</span>Life Stage Alignment <small style="font-size:11px;color:var(--ink-soft);font-weight:normal">（Dual Track）</small></h2>
       <div class="stage-legend">
-        <span><span class="dot up"></span>关键上升期</span>
-        <span><span class="dot flat"></span>调整期</span>
-        <span><span class="dot down"></span>压力期</span>
+        <span><span class="dot up"></span>Growth Phase</span>
+        <span><span class="dot flat"></span>Adjustment</span>
+        <span><span class="dot down"></span>Challenge</span>
       </div>
       <div class="stage-grid">
-        <div class="sg-label">八字大运</div>
+        <div class="sg-label">Bazi Cycles</div>
         <div class="stage-head">{{section_02.bazi.0.range}}</div>
         <div class="stage-head">{{section_02.bazi.1.range}}</div>
         <div class="stage-head">{{section_02.bazi.2.range}}</div>
@@ -898,7 +898,7 @@
         <div class="stage-head">{{section_02.bazi.5.range}}</div>
         <div class="stage-head">{{section_02.bazi.6.range}}</div>
 
-        <div class="sg-label">八字大运</div>
+        <div class="sg-label">Bazi Cycles</div>
         <div>{{section_02.bazi.0.gz}}<br>{{section_02.bazi.0.shishen}}</div>
         <div>{{section_02.bazi.1.gz}}<br>{{section_02.bazi.1.shishen}}</div>
         <div>{{section_02.bazi.2.gz}}<br>{{section_02.bazi.2.shishen}}</div>
@@ -907,7 +907,7 @@
         <div>{{section_02.bazi.5.gz}}<br>{{section_02.bazi.5.shishen}}</div>
         <div>{{section_02.bazi.6.gz}}<br>{{section_02.bazi.6.shishen}}</div>
 
-        <div class="sg-label">紫微大限</div>
+        <div class="sg-label">Ziwei Limits</div>
         <div>{{section_02.ziwei.0.range}}</div>
         <div>{{section_02.ziwei.1.range}}</div>
         <div>{{section_02.ziwei.2.range}}</div>
@@ -917,29 +917,29 @@
         <div>{{section_02.ziwei.6.range}}</div>
       </div>
       <div class="stage-conclusion">
-        <b>印证结论：</b>{{section_02.conclusion}}
+        <bCross-Verification: /b>{{section_02.conclusion}}
       </div>
     </section>
   </div>
 
-  <!-- 03 六维交叉对账 + 04 冲突清单 -->
+  <!-- 03 Six-Dimension Cross-Reference + 04 Conflict Register -->
   <div class="row-2col">
     <section class="section">
-      <h2><span class="num-box">03</span>六维交叉对账</h2>
+      <h2><span class="num-box">03</span>Six-Dimension Cross-Reference</h2>
       <div class="cross-grid">
         <div class="ch"></div>
-        <div class="ch">事业</div><div class="ch">财运</div><div class="ch">婚恋</div>
-        <div class="ch">子女</div><div class="ch">六亲</div><div class="ch">健康</div>
+        <div class="ch">Career</div><div class="ch">Wealth</div><div class="ch">Love</div>
+        <div class="ch">Children</div><div class="ch">Family</div><div class="ch">Health</div>
 
-        <div class="lh">八字观点</div>
+        <div class="lh">Bazi View</div>
         <div>{{dim.career.bazi}}</div><div>{{dim.wealth.bazi}}</div><div>{{dim.marriage.bazi}}</div>
         <div>{{dim.children.bazi}}</div><div>{{dim.family.bazi}}</div><div>{{dim.health.bazi}}</div>
 
-        <div class="lh">紫微观点</div>
+        <div class="lh">Ziwei View</div>
         <div>{{dim.career.ziwei}}</div><div>{{dim.wealth.ziwei}}</div><div>{{dim.marriage.ziwei}}</div>
         <div>{{dim.children.ziwei}}</div><div>{{dim.family.ziwei}}</div><div>{{dim.health.ziwei}}</div>
 
-        <div class="lh">印证标记</div>
+        <div class="lh">Verdict</div>
         <div><span class="verdict-tag {{dim.career.verdict_class}}">{{dim.career.verdict}}</span></div>
         <div><span class="verdict-tag {{dim.wealth.verdict_class}}">{{dim.wealth.verdict}}</span></div>
         <div><span class="verdict-tag {{dim.marriage.verdict_class}}">{{dim.marriage.verdict}}</span></div>
@@ -947,20 +947,20 @@
         <div><span class="verdict-tag {{dim.family.verdict_class}}">{{dim.family.verdict}}</span></div>
         <div><span class="verdict-tag {{dim.health.verdict_class}}">{{dim.health.verdict}}</span></div>
 
-        <div class="lh">融合结论</div>
+        <div class="lh">Fused Insight</div>
         <div>{{dim.career.fused}}</div><div>{{dim.wealth.fused}}</div><div>{{dim.marriage.fused}}</div>
         <div>{{dim.children.fused}}</div><div>{{dim.family.fused}}</div><div>{{dim.health.fused}}</div>
       </div>
     </section>
 
     <section class="section">
-      <h2><span class="num-box">04</span>冲突清单 <small style="font-size:11px;color:var(--ink-soft);font-weight:normal">（已识别的主要冲突点）</small></h2>
+      <h2><span class="num-box">04</span>Conflict Register <small style="font-size:11px;color:var(--ink-soft);font-weight:normal">（Key conflicts identified）</small></h2>
       <div class="conflict-grid">
-        <div class="ch">冲突点</div>
-        <div class="ch">八字视角</div>
-        <div class="ch">紫微视角</div>
-        <div class="ch">影响程度</div>
-        <div class="ch">建议</div>
+        <div class="ch">Conflict</div>
+        <div class="ch">From Bazi</div>
+        <div class="ch">From Ziwei</div>
+        <div class="ch">Severity</div>
+        <div class="ch">Guidance</div>
 
         <div>{{conflicts.0.point}}</div>
         <div>{{conflicts.0.bazi}}</div>
@@ -983,37 +983,37 @@
     </section>
   </div>
 
-  <!-- 05 综合定论 -->
+  <!-- 05 Final Synthesis -->
   <section class="section">
-    <h2><span class="num-box">05</span>综合定论</h2>
+    <h2><span class="num-box">05</span>Final Synthesis</h2>
     <div class="final-grid">
       <div class="final-block">
-        <h4>终极主轴</h4>
+        <h4>Life Blueprint</h4>
         <div class="big">{{final.life_axis}}</div>
       </div>
       <div class="final-block">
-        <h4>5 个关键节点（人生里程碑）</h4>
+        <h4>5 Pivotal Milestones</h4>
         <ul class="nodes-list">
-          <li>{{final.nodes.0.age}}岁（{{final.nodes.0.year}}）：{{final.nodes.0.event}}</li>
-          <li>{{final.nodes.1.age}}岁（{{final.nodes.1.year}}）：{{final.nodes.1.event}}</li>
-          <li>{{final.nodes.2.age}}岁（{{final.nodes.2.year}}）：{{final.nodes.2.event}}</li>
-          <li>{{final.nodes.3.age}}岁（{{final.nodes.3.year}}）：{{final.nodes.3.event}}</li>
-          <li>{{final.nodes.4.age}}岁（{{final.nodes.4.year}}）：{{final.nodes.4.event}}</li>
+          <li>{{final.nodes.0.age}}yr ({{final.nodes.0.year}}): {{final.nodes.0.event}}</li>
+          <li>{{final.nodes.1.age}}yr ({{final.nodes.1.year}}): {{final.nodes.1.event}}</li>
+          <li>{{final.nodes.2.age}}yr ({{final.nodes.2.year}}): {{final.nodes.2.event}}</li>
+          <li>{{final.nodes.3.age}}yr ({{final.nodes.3.year}}): {{final.nodes.3.event}}</li>
+          <li>{{final.nodes.4.age}}yr ({{final.nodes.4.year}}): {{final.nodes.4.event}}</li>
         </ul>
       </div>
       <div class="final-block">
-        <h4>3 个高风险窗口 <small style="color:var(--ink-faint)">（需谨慎）</small></h4>
+        <h4>3 High-Risk Windows <small style="color:var(--ink-faint)">（Caution advised）</small></h4>
         <div class="risk-item"><span class="head">{{final.risks.0.range}}</span><br>{{final.risks.0.desc}}</div>
         <div class="risk-item"><span class="head">{{final.risks.1.range}}</span><br>{{final.risks.1.desc}}</div>
         <div class="risk-item"><span class="head">{{final.risks.2.range}}</span><br>{{final.risks.2.desc}}</div>
       </div>
       <div class="final-block">
-        <h4>2 条优势放大策略</h4>
+        <h4>2 Leverage Strategies</h4>
         <div class="leverage-item"><span class="head">▸ {{final.leverage.0.title}}</span><br>{{final.leverage.0.desc}}</div>
         <div class="leverage-item"><span class="head">▸ {{final.leverage.1.title}}</span><br>{{final.leverage.1.desc}}</div>
       </div>
       <div class="final-block">
-        <h4>行动建议清单 <small style="color:var(--ink-faint)">（优先级）</small></h4>
+        <h4>Actionable Guidance <small style="color:var(--ink-faint)">（Priority）</small></h4>
         <div class="advice-item"><span class="num">1</span>{{final.advice.0}}</div>
         <div class="advice-item"><span class="num">2</span>{{final.advice.1}}</div>
         <div class="advice-item"><span class="num">3</span>{{final.advice.2}}</div>
@@ -1024,30 +1024,30 @@
 
   <!-- 06 置信度 -->
   <section class="section">
-    <h2><span class="num-box">06</span>置信度自评 <small style="font-size:11px;color:var(--ink-soft);font-weight:normal">（综合模型不确定性）</small></h2>
+    <h2><span class="num-box">06</span>Confidence Assessment <small style="font-size:11px;color:var(--ink-soft);font-weight:normal">（Model uncertainty summary）</small></h2>
     <div class="confidence-row">
       <div class="conf-card">
-        <div class="label">八字模型置信度</div>
+        <div class="label">Bazi Model Confidence</div>
         <div class="level">{{confidence.bazi_level}}</div>
         <div class="score">({{confidence.bazi_score}})</div>
       </div>
       <div class="conf-card">
-        <div class="label">紫微模型置信度</div>
+        <div class="label">Ziwei Model Confidence</div>
         <div class="level">{{confidence.ziwei_level}}</div>
         <div class="score">({{confidence.ziwei_score}})</div>
       </div>
       <div class="conf-card">
-        <div class="label">两盘印证一致性</div>
+        <div class="label">Cross-System Consistency</div>
         <div class="level">{{confidence.consistency_level}}</div>
         <div class="score">({{confidence.consistency_score}})</div>
       </div>
       <div class="conf-card">
-        <div class="label">关键结论稳定性</div>
+        <div class="label">Conclusion Stability</div>
         <div class="level">{{confidence.stability_level}}</div>
         <div class="score">({{confidence.stability_score}})</div>
       </div>
       <div class="conf-note">
-        <b>说明：</b>{{confidence.note}}
+        <b>Note: </b>{{confidence.note}}
       </div>
     </div>
   </section>
