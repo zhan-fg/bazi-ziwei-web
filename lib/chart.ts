@@ -59,6 +59,44 @@ export interface ChartResult {
   text: string;
 }
 
+const GONG_NAMES_EN: Record<string, string> = {
+  '命宫': 'Life', '兄弟': 'Siblings', '夫妻': 'Spouse', '子女': 'Children',
+  '财帛': 'Wealth', '疾厄': 'Health', '迁移': 'Travel', '交友': 'Friends',
+  '官禄': 'Career', '田宅': 'Property', '福德': 'Fortune', '父母': 'Parents',
+};
+
+function translateGongNames(chart: any) {
+  for (const g of chart.ziwei?.gongs || []) {
+    if (GONG_NAMES_EN[g.gong]) g.gong = GONG_NAMES_EN[g.gong];
+  }
+  // Translate element names in wuxing wangxiang
+  const ELEMENT_EN: Record<string, string> = { '木': 'Wood', '火': 'Fire', '土': 'Earth', '金': 'Metal', '水': 'Water' };
+  const wx = chart.bazi?.enrichment?.['五行旺相'];
+  if (wx) {
+    for (const k of Object.keys(wx)) {
+      if (ELEMENT_EN[k]) {
+        wx[ELEMENT_EN[k]] = wx[k];
+        delete wx[k];
+      }
+    }
+  }
+  // Translate shiShen labels to English short forms
+  const SS_EN: Record<string, string> = {
+    '正印': 'DirRes', '偏印': 'IndRes', '正官': 'DirOff', '七杀': '7Kill',
+    '正财': 'DirWth', '偏财': 'IndWth', '食神': 'EatGod', '伤官': 'HurtOff',
+    '比肩': 'Friend', '劫财': 'RobWth',
+  };
+  for (const d of chart.bazi?.dayun || []) {
+    if (SS_EN[d.ganShiShen]) d.ganShiShen = SS_EN[d.ganShiShen];
+    if (SS_EN[d.zhiShiShen]) d.zhiShiShen = SS_EN[d.zhiShiShen];
+  }
+  for (const d of chart.bazi?.shiShen ? [chart.bazi.shiShen] : []) {
+    for (const k of Object.keys(d)) {
+      if (SS_EN[d[k]]) d[k] = SS_EN[d[k]];
+    }
+  }
+}
+
 export function runChart(birthInfo: {
   year: number;
   month: number;
@@ -90,6 +128,7 @@ export function runChart(birthInfo: {
   }
   const clean = raw.slice(jsonStart, jsonEnd + 1);
   const chart = JSON.parse(clean);
+  translateGongNames(chart);
 
   // Step 2: dump-text — write chart to /tmp, pass absolute path
   const tmpJson = path.join(TMP, `.chart-${Date.now()}.json`);
