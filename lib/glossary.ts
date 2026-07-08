@@ -32,15 +32,15 @@ export const tPalaceBody = (s?: string | null) => pick(G.palaceBodies as Dict, s
 export const tGan = (s?: string | null) => {
   if (!s) return "";
   const en = (G.stems as Dict)[s];
-  return en ? `${en} ${s}` : s;
+  return en ? `${s}${en}` : s;
 };
 export const tGanElement = (s?: string | null) => pick(G.stemElements as Dict, s);
 export const tZhi = (s?: string | null) => {
   if (!s) return "";
   const en = (G.branches as Dict)[s];
-  return en ? `${en} ${s}` : s;
+  return en ? `${s}${en}` : s;
 };
-// Translate a 2-char stem-branch string (e.g. "癸丑" → "Gui 癸 Chou 丑").
+// Translate a 2-char stem-branch string (e.g. "癸丑" → "癸Gui 丑Chou").
 export const tGanZhi = (s?: string | null) => {
   if (!s) return "";
   if (s.length >= 2) return tGan(s[0]) + " " + tZhi(s[1]);
