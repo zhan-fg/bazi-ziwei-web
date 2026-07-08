@@ -51,7 +51,7 @@ export default function ResultPage() {
     const el = posterContainerRef.current;
     // Inject hidden iframe to render, then capture
     const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:absolute;left:-9999px;width:1200px;height:1600px;border:none";
+    iframe.style.cssText = "position:absolute;left:-9999px;width:1140px;border:none";
     iframe.srcdoc = posterHTML;
     document.body.appendChild(iframe);
 
@@ -63,7 +63,7 @@ export default function ResultPage() {
         const canvas = await html2canvas(doc.body, {
           scale: 2,
           backgroundColor: "#ffffff",
-          width: 1200,
+          width: 1140,
           height: doc.body.scrollHeight || 1600,
         });
         setPosterImg(canvas.toDataURL("image/png"));
@@ -164,7 +164,7 @@ export default function ResultPage() {
         {/* Hidden div for html2canvas rendering */}
         <div
           ref={posterContainerRef}
-          className="absolute left-[-9999px] top-0 w-[1200px]"
+          className="absolute left-[-9999px] top-0 w-[1140px]"
           dangerouslySetInnerHTML={{ __html: posterHTML }}
         />
 
@@ -174,7 +174,7 @@ export default function ResultPage() {
               src={posterImg}
               alt="Bazi & Ziwei Chart"
               className="block mx-auto"
-              style={{ minWidth: "100%", maxWidth: "1200px" }}
+              style={{ minWidth: "100%", maxWidth: "1140px" }}
             />
           </div>
         ) : (
