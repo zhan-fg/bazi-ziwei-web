@@ -22,10 +22,11 @@ function pick(dict: Dict | undefined, term: string | undefined | null): string {
 export const tStar = (s?: string | null) => pick(G.stars as Dict, s);
 export const tPalace = (s?: string | null) => {
   if (!s) return "";
-  if (G.palaces[s]) return G.palaces[s];
+  const v = pick(G.palaces as Dict, s);
+  if (v !== s) return v;
   // data sometimes carries a trailing 宫 (e.g. 命宫) — strip and retry
   const base = s.endsWith("宫") ? s.slice(0, -1) : s;
-  return G.palaces[base] ?? s;
+  return pick(G.palaces as Dict, base);
 };
 export const tPalaceBody = (s?: string | null) => pick(G.palaceBodies as Dict, s);
 export const tGan = (s?: string | null) => pick(G.stems as Dict, s);
@@ -36,8 +37,8 @@ export const tGanZhi = (s?: string | null) => {
   if (!s) return "";
   if (s.length >= 2) return tGan(s[0]) + tZhi(s[1]);
   // single char: try stem, then branch
-  if (G.stems[s]) return G.stems[s];
-  if (G.branches[s]) return G.branches[s];
+  if (pick(G.stems as Dict, s) !== s) return pick(G.stems as Dict, s);
+  if (pick(G.branches as Dict, s) !== s) return pick(G.branches as Dict, s);
   return s;
 };
 export const tElement = (s?: string | null) => pick(G.elements as Dict, s);
