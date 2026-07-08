@@ -242,8 +242,8 @@
   /* ============ ZIWEI + BAZI GRID ============ */
   .charts-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 14px;
+    grid-template-columns: 1fr;
+    gap: 20px;
     margin-bottom: 20px;
   }
   .ziwei-pan {
@@ -263,51 +263,47 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(4, 1fr);
-    height: 620px;
+    height: 700px;
     background: var(--line-soft);
     gap: 1px;
   }
   .palace {
     background: var(--paper);
-    padding: 2px 4px;
-    font-size: 9px;
+    padding: 6px 8px;
+    font-size: 11px;
     position: relative;
     display: flex; flex-direction: column;
-    overflow: hidden;
   }
   .palace.ming { box-shadow: inset 0 0 0 2px var(--vermillion); }
   .palace.ming .p-gong { color: var(--vermillion); }
   .shen-badge {
-    display: inline-block; margin-left: 2px;
+    display: inline-block; margin-left: 3px;
     color: var(--vermillion); border: 1px solid var(--vermillion);
-    border-radius: 2px; font-size: 6px; line-height: 1.1;
-    padding: 0 1px; vertical-align: middle; font-weight: normal;
+    border-radius: 2px; font-size: 8px; line-height: 1.2;
+    padding: 0 2px; vertical-align: middle; font-weight: normal;
   }
   .palace .p-head {
-    display: flex; justify-content: space-between; align-items: center; gap: 2px;
+    display: flex; justify-content: space-between; align-items: center; gap: 3px;
     border-bottom: 1px dashed var(--line-soft);
-    padding: 2px 0 3px; margin-bottom: 3px;
-    min-width: 0; flex-wrap: wrap; min-height: 22px;
+    padding-bottom: 3px; margin-bottom: 4px;
+    min-width: 0;
   }
   .palace .p-head .p-gong-wrap { display: flex; align-items: center; min-width: 0; }
-  .palace .p-dizhi { color: var(--ink-soft); flex-shrink: 0; font-size: 8px; }
-  .palace .p-gong { font-weight: bold; font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .palace .p-ganzhi { font-size: 7px; color: var(--ink-faint); flex-shrink: 0; white-space: nowrap; line-height: 1.1; }
-  .palace .star-area {
-    flex: 0 1 auto; max-height: 48px; overflow: hidden;
-  }
+  .palace .p-dizhi { color: var(--ink-soft); flex-shrink: 0; font-size: 10px; }
+  .palace .p-gong { font-weight: bold; font-size: 11px; }
+  .palace .p-ganzhi { font-size: 9px; color: var(--ink-faint); flex-shrink: 0; }
   .palace .main-star {
-    font-size: 9px; font-weight: bold; line-height: 1.2; max-height: 2.4em; overflow: hidden;
+    font-size: 13px; font-weight: bold; line-height: 1.4;
   }
   .palace .main-star .state {
-    font-size: 7px; color: var(--ink-soft); margin-left: 1px;
+    font-size: 9px; color: var(--ink-soft); margin-left: 2px;
   }
-  .palace .aux-star { color: var(--ink-soft); font-size: 8px; line-height: 1.2; max-height: 2.4em; overflow: hidden; }
-  .palace .small-star { color: var(--ink-faint); font-size: 7px; line-height: 1.1; max-height: 1.1em; overflow: hidden; }
+  .palace .aux-star { color: var(--ink-soft); font-size: 10px; line-height: 1.4; }
+  .palace .small-star { color: var(--ink-faint); font-size: 9px; line-height: 1.3; }
   .palace .daxian {
-    margin-top: auto; padding: 4px 0 2px;
+    margin-top: auto; padding-top: 5px;
     border-top: 1px dashed var(--line-soft);
-    font-size: 8px; color: var(--ink-soft); white-space: nowrap; min-height: 18px;
+    font-size: 10px; color: var(--ink-soft);
   }
   .palace.current-daxian .daxian { color: var(--vermillion); font-weight: bold; }
   .sihua-禄 { color: var(--vermillion); }
@@ -344,9 +340,9 @@
     padding: 4px 8px;
     text-align: center;
   }
-  .center-palace .pillar .pname { font-size: 7px; color: var(--ink-faint); letter-spacing: 0; }
-  .center-palace .pillar .pgan { font-size: 10px; font-weight: bold; }
-  .center-palace .pillar .pzhi { font-size: 9px; color: var(--ink-soft); }
+  .center-palace .pillar .pname { font-size: 9px; color: var(--ink-faint); letter-spacing: 1px; }
+  .center-palace .pillar .pgan { font-size: 13px; font-weight: bold; }
+  .center-palace .pillar .pzhi { font-size: 12px; color: var(--ink-soft); }
 
   /* ============ BAZI PAN ============ */
   .bazi-pan { background: var(--paper); border: 1px solid var(--line); }
@@ -357,17 +353,17 @@
   }
   .b-col {
     border-right: 1px solid var(--line-faint);
-    padding: 8px 4px; text-align: center;
+    padding: 10px 6px; text-align: center;
   }
   .b-col:last-child { border-right: none; }
-  .b-head { font-size: 8px; color: var(--ink-soft); }
-  .b-shishen { font-size: 9px; color: var(--vermillion); margin: 1px 0; }
-  .b-shishen.dayMaster { color: var(--ink); border: 1px solid var(--ink); padding: 0 3px; display: inline-block; font-size: 8px; }
-  .b-gan { font-size: 14px; font-weight: bold; line-height: 1.1; margin: 1px 0; word-break: break-word; }
-  .b-zhi { font-size: 12px; line-height: 1.1; margin: 1px 0; word-break: break-word; }
+  .b-head { font-size: 10px; color: var(--ink-soft); }
+  .b-shishen { font-size: 11px; color: var(--vermillion); margin: 2px 0; }
+  .b-shishen.dayMaster { color: var(--ink); border: 1px solid var(--ink); padding: 0 4px; display: inline-block; }
+  .b-gan { font-size: 22px; font-weight: bold; line-height: 1.2; margin: 2px 0; }
+  .b-zhi { font-size: 18px; line-height: 1.2; margin: 2px 0; }
   .b-canggan {
-    font-size: 7px; color: var(--ink-soft);
-    line-height: 1.3; min-height: 35px;
+    font-size: 9px; color: var(--ink-soft);
+    line-height: 1.5; min-height: 45px;
     border-top: 1px dashed var(--line-soft); margin-top: 4px;
     padding-top: 4px;
   }
@@ -403,7 +399,7 @@
   .strip-cell:last-child { border-right: none; }
   .strip-cell.current { background: rgba(193,67,47,0.08); }
   .strip-cell.current .ages { color: var(--vermillion); font-weight: bold; }
-  .strip-cell .gz { font-size: 9.5px; font-weight: bold; color: var(--ink); line-height: 1.25; }
+  .strip-cell .gz { font-size: 11px; font-weight: bold; color: var(--ink); }
   .strip-cell .ages { color: var(--ink-soft); }
   .strip-cell .ss { font-size: 8px; color: var(--ink-faint); margin-top: 1px; }
   .strip-cell.current.dayun::after {
