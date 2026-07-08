@@ -40,12 +40,12 @@ export default function PosterPage() {
     URL.revokeObjectURL(url);
   };
 
-  if (loading) return <LoadingSpinner message="加载海报..." />;
+  if (loading) return <LoadingSpinner message="Loading poster..." />;
   if (error) {
     return (
       <main className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
         <p className="text-red-600">{error}</p>
-        <Link href="/" className="text-amber-600 hover:underline">返回首页</Link>
+        <Link href="/" className="text-amber-600 hover:underline">Back</Link>
       </main>
     );
   }
@@ -54,14 +54,14 @@ export default function PosterPage() {
     <main className="flex-1 flex flex-col items-center px-4 py-8">
       <div className="flex items-center gap-4 mb-6 w-full max-w-4xl">
         <Link href={`/reading/${id}`} className="text-amber-600 hover:text-amber-700 text-sm font-medium">
-          ← 返回解读
+          ← Back to Reading
         </Link>
         <div className="flex-1" />
         <button
           onClick={handleDownload}
           className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
         >
-          下载海报
+          Download Poster
         </button>
       </div>
 
@@ -76,7 +76,7 @@ export default function PosterPage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-stone-400">
-        海报含 QR 码 · 扫码可查看完整解读 · 仅供文化研究与娱乐参考
+        Poster includes a QR code · Scan for the full reading · For cultural study and entertainment only
       </p>
     </main>
   );

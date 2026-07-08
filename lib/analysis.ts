@@ -1,5 +1,15 @@
 // Generate analysis JSON from chart data without LLM.
 // Fills poster template fields with chart-derived insights in English.
+//
+// The chart JSON stays in the engine's raw Chinese form. Logic that matches on
+// Chinese enum values (geju.includes('杀'), g.gong === '官禄', ws5['土'] === '死',
+// ganShiShen.includes('印')) keeps reading raw Chinese — only the values
+// embedded in English output strings are glossaried via lib/glossary.
+
+import {
+  tGeju, tGan, tGanElement, tWangShuai, tStar, tStars, tSiHua,
+  tZhi, tPalace, tShiShen, tWuXingJu,
+} from '@/lib/glossary';
 
 export function generateAnalysis(chart: any, birthInfo: any): any {
   const bz = chart.bazi;
@@ -8,8 +18,10 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
 
   const geju = en?.['格局']?.primary || '';
   const wangshuai = en?.['旺衰']?.verdict || '';
-  const tiaohou = (en?.['调候用神'] || []).join('/');
+  const tiaohouRaw = (en?.['调候用神'] || []);
+  const tiaohou = tiaohouRaw.map(tGan).join(', ');
   const dayMaster = bz.dayMaster;
+  const dayMasterEl = tGanElement(dayMaster) || 'Earth';
   const dayunCurrent = (bz.dayun || []).find((d: any) => {
     const age = new Date().getFullYear() - birthInfo.year + 1;
     return d.startAge <= age && age <= (d.endAge || d.startAge + 9);
@@ -17,20 +29,23 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
 
   const mingGong = zw.gongs[0];
   const shenGongIdx = zw.shenGongIndex;
-  const shenGong = zw.gongs.find((g: any) => g.dizhi === ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][shenGongIdx]);
-  const mainStars = (mingGong.mainStars || []).join(' · ');
+  const shenGong = zw.gongs.find((g: any) =>
+    g.dizhi === ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][shenGongIdx]
+  );
+  const mainStars = (mingGong.mainStars || []).map(tStar).join(' · ');
   const allSihua: string[] = [];
   for (const g of zw.gongs) {
-    for (const s of g.sihua || []) allSihua.push(`${s.star} ${s.hua}`);
+    for (const s of g.sihua || []) allSihua.push(`${tStar(s.star)} ${tSiHua(s.hua)}`);
   }
 
+  // --- logic on raw Chinese geju/wangshuai (unchanged) ---
   const careerBazi = geju.includes('杀') ? 'Pressure into authority — thrive in organizations'
     : geju.includes('官') ? 'Disciplined path for structured roles'
     : 'Balanced: multiple viable paths';
 
   const careerZiwei = (() => {
     const guanlu = zw.gongs.find((g: any) => g.gong === '官禄');
-    const stars = guanlu?.mainStars?.join(' · ') || '';
+    const stars = (guanlu?.mainStars || []).map(tStar).join(' · ') || '';
     return stars ? `Career Palace: ${stars} — clear direction` : 'Career strength drawn from opposite palace';
   })();
 
@@ -43,25 +58,24 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
 
   const wealthZiwei = (() => {
     const caibo = zw.gongs.find((g: any) => g.gong === '财帛');
-    const stars = caibo?.mainStars?.join(' · ') || '';
+    const stars = (caibo?.mainStars || []).map(tStar).join(' · ') || '';
     return caibo?.mainStars?.length ? `Wealth Palace: ${stars}` : 'Wealth Palace empty — hedge with property';
   })();
 
   const marriageBazi = (() => {
-    const cg = bz.cangGan?.day || [];
-    return `Day Branch ${bz.siZhu.day.zhi}: partner is grounded and practical`;
+    return `Day Branch ${tZhi(bz.siZhu.day.zhi)}: partner is grounded and practical`;
   })();
 
   const marriageZiwei = (() => {
     const fuqi = zw.gongs.find((g: any) => g.gong === '夫妻');
-    const stars = fuqi?.mainStars?.join(' · ') || '';
+    const stars = (fuqi?.mainStars || []).map(tStar).join(' · ') || '';
     return stars ? `Spouse Palace: ${stars}` : 'Spouse Palace: late marriage favored';
   })();
 
-  const childrenBazi = `Hour Pillar ${bz.siZhu.hour.gan}${bz.siZhu.hour.zhi}: children with promise`;
+  const childrenBazi = `Hour Pillar ${tGan(bz.siZhu.hour.gan)}${tZhi(bz.siZhu.hour.zhi)}: children with promise`;
   const childrenZiwei = (() => {
     const zinvg = zw.gongs.find((g: any) => g.gong === '子女');
-    const stars = zinvg?.mainStars?.join(' · ') || '';
+    const stars = (zinvg?.mainStars || []).map(tStar).join(' · ') || '';
     return stars ? `Children Palace: ${stars}` : 'Children Palace: steady';
   })();
 
@@ -76,31 +90,34 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
 
   const healthZiwei = (() => {
     const jie = zw.gongs.find((g: any) => g.gong === '疾厄');
-    const stars = jie?.mainStars?.join(' · ') || '';
+    const stars = (jie?.mainStars || []).map(tStar).join(' · ') || '';
     return stars ? `Health Palace: ${stars}` : 'Health Palace: steady';
   })();
 
-  const archetypeName = `${geju} ${dayMaster} Earth`;
-  const axisOneliner = `${geju || 'Chart'} · ${wangshuai || 'Balanced'} · ${tiaohou || 'Seasonal'}`;
+  const archetypeName = `${tGeju(geju)} ${tGan(dayMaster)} ${dayMasterEl}`;
+  const axisOneliner = `${tGeju(geju) || 'Chart'} · ${tWangShuai(wangshuai) || 'Balanced'} · ${tiaohou || 'Seasonal'}`;
 
   const nodes = (bz.dayun || []).slice(0, 5).map((d: any) => ({
     age: d.startAge,
     year: d.startYear,
-    event: `${d.ganZhi.gan}${d.ganZhi.zhi} cycle (${d.ganShiShen}/${d.zhiShiShen})`,
+    event: `${tGan(d.ganZhi.gan)}${tZhi(d.ganZhi.zhi)} cycle (${tShiShen(d.ganShiShen)}/${tShiShen(d.zhiShiShen)})`,
   }));
 
-  const tiaohouGan = (en?.['调候用神'] || [])[0] || '';
+  const tiaohouGan = tGan((en?.['调候用神'] || [])[0]);
+
+  const shenGongDizhi = tZhi(shenGong?.dizhi);
+  const shenGongName = tPalace(shenGong?.gong);
 
   return {
     meta: { archetype_name: archetypeName.slice(0, 20), axis_oneliner: axisOneliner.slice(0, 30) },
     axes: {
-      bazi_main: `${geju} · Day Master ${dayMaster} · ${wangshuai} · Needs ${tiaohou}`.slice(0, 60),
-      ziwei_main: `Life ${mingGong.dizhi} · ${mainStars} · Body ${shenGong?.dizhi || ''} · ${allSihua.join(' ')}`.slice(0, 60),
+      bazi_main: `${tGeju(geju)} · Day Master ${tGan(dayMaster)} ${dayMasterEl} · ${tWangShuai(wangshuai)} · Needs ${tiaohou}`.slice(0, 60),
+      ziwei_main: `Life ${tZhi(mingGong.dizhi)} · ${mainStars} · Body ${shenGongDizhi} · ${allSihua.join(' ')}`.slice(0, 60),
     },
     consistency: 'Aligned',
     strengths: [
-      { title: 'Clear Structure', desc: `${geju}: well-defined life direction` },
-      { title: 'Solid Core', desc: `Day Master ${dayMaster} Earth: resilient` },
+      { title: 'Clear Structure', desc: `${tGeju(geju)}: well-defined life direction` },
+      { title: 'Solid Core', desc: `Day Master ${tGan(dayMaster)} ${dayMasterEl}: resilient` },
       { title: tiaohou ? 'Seasonal Balance' : 'Element Flow', desc: tiaohou ? `Seasonal needs met` : 'Elements balanced' },
     ],
     weaknesses: [
@@ -109,12 +126,12 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
       { title: 'Deep Thinker', desc: 'Practice letting go of over-analysis' },
     ],
     section_01: {
-      text: `${geju} chart, Day Master ${dayMaster} Earth, born in ${bz.siZhu.month.zhi} month. ${wangshuai ? `Self is ${wangshuai}. ` : ''}Seasonal needs: ${tiaohou}. Life Palace in ${mingGong.dizhi} with ${mainStars}, Body Palace in ${shenGong?.gong || ''}. Birth transformations: ${allSihua.join(' · ')}. Both systems converge: the Bazi ${geju} and Ziwei ${mainStars} point to one life path. ${dayunCurrent ? `Currently in ${dayunCurrent.ganZhi.gan}${dayunCurrent.ganZhi.zhi} cycle.` : ''}`.slice(0, 300),
+      text: `${tGeju(geju)} chart, Day Master ${tGan(dayMaster)} ${dayMasterEl}, born in ${tZhi(bz.siZhu.month.zhi)} month. ${wangshuai ? `Self is ${tWangShuai(wangshuai)}. ` : ''}Seasonal needs: ${tiaohou}. Life Palace in ${tZhi(mingGong.dizhi)} with ${mainStars}, Body Palace in ${shenGongName}. Birth transformations: ${allSihua.join(' · ')}. Both systems converge: the BaZi ${tGeju(geju)} and Ziwei ${mainStars} point to one life path. ${dayunCurrent ? `Currently in ${tGan(dayunCurrent.ganZhi.gan)}${tZhi(dayunCurrent.ganZhi.zhi)} cycle.` : ''}`.slice(0, 300),
       word_count: 180,
     },
     section_02: {
       conclusion: dayunCurrent
-        ? `Currently ${dayunCurrent.startYear}-${dayunCurrent.endYear}: ${dayunCurrent.ganZhi.gan}${dayunCurrent.ganZhi.zhi} cycle (${dayunCurrent.ganShiShen}/${dayunCurrent.zhiShiShen}) — ${dayunCurrent.ganShiShen?.includes('印') ? 'prime learning period' : dayunCurrent.ganShiShen?.includes('财') ? 'wealth accumulation' : 'life transition'}.`
+        ? `Currently ${dayunCurrent.startYear}-${dayunCurrent.endYear}: ${tGan(dayunCurrent.ganZhi.gan)}${tZhi(dayunCurrent.ganZhi.zhi)} cycle (${tShiShen(dayunCurrent.ganShiShen)}/${tShiShen(dayunCurrent.zhiShiShen)}) — ${dayunCurrent.ganShiShen?.includes('印') ? 'prime learning period' : dayunCurrent.ganShiShen?.includes('财') ? 'wealth accumulation' : 'life transition'}.`
         : 'Cycles unfold according to chart dynamics.',
     },
     dim: {
@@ -126,12 +143,12 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
       health:   { bazi: healthBazi, ziwei: healthZiwei, verdict: '🟢 Aligned', verdict_class: 'verdict-yes', fused: 'Monitor weak points, stabilize in midlife' },
     },
     conflicts: [
-      { point: 'Strength Edge', bazi: `Self ${wangshuai}: luck-dependent`, ziwei: 'Life Palace stars steady', impact: 'Low', impact_class: 'low', advice: 'Use cycles as guide, stay flexible' },
+      { point: 'Strength Edge', bazi: `Self ${tWangShuai(wangshuai)}: luck-dependent`, ziwei: 'Life Palace stars steady', impact: 'Low', impact_class: 'low', advice: 'Use cycles as guide, stay flexible' },
       { point: 'Wealth View', bazi: 'Many stars, self weaker', ziwei: 'Wealth Palace empty', impact: 'Low', impact_class: 'low', advice: 'Defensive posture, hedge with property' },
       { point: 'Relationships', bazi: 'Peer support present', ziwei: 'Friends Palace unique', impact: 'Low', impact_class: 'low', advice: 'Choose partners carefully, clear accounts' },
     ],
     final: {
-      life_axis: `${geju} ${dayMaster} Earth · ${mainStars} · ${wangshuai || 'Balanced'} destiny`,
+      life_axis: `${tGeju(geju)} ${tGan(dayMaster)} ${dayMasterEl} · ${mainStars} · ${tWangShuai(wangshuai) || 'Balanced'} destiny`,
       nodes: nodes.map((n: any) => ({ ...n, event: n.event.slice(0, 50) })),
       risks: [
         { range: 'Cycle transition years', desc: 'Stay steady during luck cycle changes — no big moves' },

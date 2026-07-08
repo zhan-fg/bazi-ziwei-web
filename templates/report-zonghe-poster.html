@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>{{meta.archetype_name}} · Destiny Chart Report</title>
@@ -622,7 +622,7 @@
         <div class="info-i">ⓘ</div>
         <div class="label">Structure</div>
         <div class="value">{{core.geju}}</div>
-        <div class="conf"Confidence: {{core.geju_confidence}}</div>
+        <div class="conf">Confidence: {{core.geju_confidence}}</div>
       </div>
       <div class="data-card">
         <div class="info-i">ⓘ</div>
@@ -638,22 +638,22 @@
         <div class="info-i">ⓘ</div>
         <div class="label">Seasonal Needs</div>
         <div class="value-tiaohou" style="margin-top:6px"><span>{{core.tiaohou.0}}</span><span>{{core.tiaohou.1}}</span></div>
-        <div class="conf" style="margin-top:8px"Confidence: {{core.tiaohou_confidence}}</div>
+        <div class="conf" style="margin-top:8px">Confidence: {{core.tiaohou_confidence}}</div>
       </div>
       <div class="data-card">
         <div class="label">Monthly Element</div>
         <div class="yueling" style="margin-top:8px">
-          <span class="tag">水{{core.yueling.水}}</span>·<span class="tag">木{{core.yueling.木}}</span>·<span class="tag">金{{core.yueling.金}}</span>·<span class="tag">土{{core.yueling.土}}</span>·<span class="tag">火{{core.yueling.火}}</span>
+          <span class="tag">Water {{core.yueling.Water}}</span>·<span class="tag">Wood {{core.yueling.Wood}}</span>·<span class="tag">Metal {{core.yueling.Metal}}</span>·<span class="tag">Earth {{core.yueling.Earth}}</span>·<span class="tag">Fire {{core.yueling.Fire}}</span>
         </div>
       </div>
       <div class="data-card">
         <div class="label">Five Elements (incl. hidden stems)</div>
         <div class="wx-bars">
-          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.木}}%;background:var(--jade)"></div><div class="name">木</div><div class="num-val num">{{core.wuxing.木}}</div></div>
-          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.火}}%;background:var(--vermillion)"></div><div class="name">火</div><div class="num-val num">{{core.wuxing.火}}</div></div>
-          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.土}}%;background:#a07c4a"></div><div class="name">土</div><div class="num-val num">{{core.wuxing.土}}</div></div>
-          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.金}}%;background:#9c9382"></div><div class="name">金</div><div class="num-val num">{{core.wuxing.金}}</div></div>
-          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.水}}%;background:var(--azure)"></div><div class="name">水</div><div class="num-val num">{{core.wuxing.水}}</div></div>
+          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.Wood}}%;background:var(--jade)"></div><div class="name">Wood</div><div class="num-val num">{{core.wuxing.Wood}}</div></div>
+          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.Fire}}%;background:var(--vermillion)"></div><div class="name">Fire</div><div class="num-val num">{{core.wuxing.Fire}}</div></div>
+          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.Earth}}%;background:#a07c4a"></div><div class="name">Earth</div><div class="num-val num">{{core.wuxing.Earth}}</div></div>
+          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.Metal}}%;background:#9c9382"></div><div class="name">Metal</div><div class="num-val num">{{core.wuxing.Metal}}</div></div>
+          <div class="wx-bar"><div class="col" style="height:{{core.wuxing_pct.Water}}%;background:var(--azure)"></div><div class="name">Water</div><div class="num-val num">{{core.wuxing.Water}}</div></div>
         </div>
       </div>
     </div>
@@ -663,7 +663,7 @@
   <div class="charts-grid">
     <!-- ZIWEI -->
     <div class="ziwei-pan">
-      <h3>Ziwei Doushu · 12 Palaces <small>生年四化：<span class="sh-禄">Lu Vermillion</span> / <span class="sh-权">Quan Azure</span> / <span class="sh-科">Ke Jade</span> / <span class="sh-忌">Ji Obsidian</span></small></h3>
+      <h3>Ziwei Doushu · 12 Palaces <small>Annual Transformations: <span class="sh-禄">Lu Vermillion</span> / <span class="sh-权">Quan Azure</span> / <span class="sh-科">Ke Jade</span> / <span class="sh-忌">Ji Obsidian</span></small></h3>
       <div class="ziwei-grid">
         <!-- 巳 兄弟 -->
         <div class="palace {{gongs.巳.flag}}" data-zhi="巳">

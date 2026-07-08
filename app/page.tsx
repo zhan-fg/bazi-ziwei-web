@@ -40,7 +40,7 @@ export default function HomePage() {
         body: JSON.stringify({
           year: Number(form.year), month: Number(form.month), day: Number(form.day),
           hour: Number(form.shichen), minute: 0,
-          gender: form.gender === "male" ? "男" : "女",
+          gender: form.gender,
           isLunar: form.isLunar,
         }),
       });
@@ -61,10 +61,10 @@ export default function HomePage() {
       {/* Hero */}
       <section className="text-center px-4 pt-20 pb-12 bg-gradient-to-b from-amber-50 to-white">
         <h1 className="text-5xl font-bold text-stone-800 mb-4 tracking-tight">
-          快来获取你的命运之盘
+          Discover Your Destiny Chart
         </h1>
         <p className="text-lg text-stone-500 max-w-lg mx-auto">
-          八字 · 紫微斗数 — 中国传统命理学为你揭示人生密码
+          BaZi · Zi Wei Dou Shu — Traditional Chinese astrology decoded
         </p>
       </section>
 
@@ -83,29 +83,29 @@ export default function HomePage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <p className="text-stone-600 font-medium">正在生成命盘...</p>
+              <p className="text-stone-600 font-medium">Generating chart...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="text-center mb-2">
-                <h2 className="text-lg font-semibold text-stone-800">输入出生时间</h2>
+                <h2 className="text-lg font-semibold text-stone-800">Enter Birth Time</h2>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-stone-500 mb-1">年</label>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Year</label>
                   <input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })}
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     min="1900" max="2100" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-stone-500 mb-1">月</label>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Month</label>
                   <input type="number" value={form.month} onChange={(e) => setForm({ ...form, month: e.target.value })}
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     min="1" max="12" required />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-stone-500 mb-1">日</label>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Day</label>
                   <input type="number" value={form.day} onChange={(e) => setForm({ ...form, day: e.target.value })}
                     className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                     min="1" max="31" required />
@@ -113,7 +113,7 @@ export default function HomePage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-stone-500 mb-1">出生时辰</label>
+                <label className="block text-xs font-medium text-stone-500 mb-1">Birth Hour</label>
                 <select value={form.shichen} onChange={(e) => setForm({ ...form, shichen: e.target.value })}
                   className="w-full px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent">
                   {SHI_CHEN.map((s) => (
@@ -124,7 +124,7 @@ export default function HomePage() {
 
               <div className="flex gap-4 items-end">
                 <div className="flex-1">
-                  <label className="block text-xs font-medium text-stone-500 mb-1">性别</label>
+                  <label className="block text-xs font-medium text-stone-500 mb-1">Gender</label>
                   <div className="flex gap-2">
                     {["male", "female"].map((g) => (
                       <button key={g} type="button" onClick={() => setForm({ ...form, gender: g })}
@@ -133,7 +133,7 @@ export default function HomePage() {
                             ? "bg-stone-800 text-white border-stone-800"
                             : "bg-white text-stone-600 border-stone-300 hover:bg-stone-50"
                         }`}>
-                        {g === "male" ? "男" : "女"}
+                        {g === "male" ? "Male" : "Female"}
                       </button>
                     ))}
                   </div>
@@ -147,7 +147,7 @@ export default function HomePage() {
 
               <button type="submit" disabled={loading}
                 className="w-full py-3 bg-stone-800 hover:bg-stone-900 disabled:bg-stone-400 text-white font-medium rounded-lg transition">
-                生成命盘
+                Generate Chart
               </button>
             </form>
           )}
@@ -163,7 +163,7 @@ export default function HomePage() {
           <Link href="/disclaimer" className="hover:text-stone-600 underline">Disclaimer</Link>
         </div>
         <p className="text-xs text-stone-400">
-          仅供娱乐参考 · 不构成专业建议
+          For entertainment only · Not professional advice
         </p>
       </footer>
     </main>

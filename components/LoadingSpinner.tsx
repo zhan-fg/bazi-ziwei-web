@@ -1,4 +1,4 @@
-export default function LoadingSpinner({ message = "加载中..." }: { message?: string }) {
+export default function LoadingSpinner({ message = "Loading..." }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
       <svg className="animate-spin h-10 w-10 text-amber-600" viewBox="0 0 24 24">

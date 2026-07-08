@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       day: Number(day),
       hour: Number(hour),
       minute: Number(minute),
-      gender: gender === '男' ? 'male' as const : 'female' as const,
+      gender: gender === 'male' ? 'male' as const : 'female' as const,
       isLunar: isLunar === true,
     };
 

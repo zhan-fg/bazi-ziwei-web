@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { tGan, tZhi, tStar, tGeju, tGanElement } from "@/lib/glossary";
 
 export default function ResultPage() {
   const { id } = useParams<{ id: string }>();
@@ -223,15 +224,15 @@ export default function ResultPage() {
         {/* Quick facts */}
         <div className="mt-8 grid grid-cols-2 gap-3">
           {[
-            ["Day Master", `${bz?.dayMaster} Earth`],
-            ["Structure", chart?.bazi?.enrichment?.['格局']?.primary || '-'],
-            ["Self Palace", zw?.gongs?.[0]?.mainStars?.join('·') || '-'],
+            ["Day Master", `${tGan(bz?.dayMaster)} ${tGanElement(bz?.dayMaster) || 'Earth'}`],
+            ["Structure", tGeju(chart?.bazi?.enrichment?.['格局']?.primary) || '-'],
+            ["Self Palace", (zw?.gongs?.[0]?.mainStars || []).map(tStar).join(' · ') || '-'],
             ["Current Cycle", (() => {
               const d = (bz?.dayun || []).find((d: any) => {
                 const age = new Date().getFullYear() - bi.year + 1;
                 return d.startAge <= age && age <= (d.endAge || d.startAge + 9);
               });
-              return d ? `${d.ganZhi.gan}${d.ganZhi.zhi}` : '-';
+              return d ? `${tGan(d.ganZhi.gan)}${tZhi(d.ganZhi.zhi)}` : '-';
             })()],
           ].map(([label, val]) => (
             <div key={label} className="bg-stone-50 rounded-lg p-3 text-center">

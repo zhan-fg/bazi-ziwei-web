@@ -4,6 +4,10 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import Link from "next/link";
+import {
+  tPalace, tGan, tZhi, tStar, tGeju, tWangShuai, tShiShen,
+  tYinYang, tWuXingJu, tSiHua,
+} from "@/lib/glossary";
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -21,6 +25,12 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       {children}
     </div>
   );
+}
+
+// split a 2-char ganzhi string (e.g. "癸丑") → "Gui Chou"
+function fmtGanZhi(s?: string) {
+  if (!s || s.length < 2) return s || "";
+  return tGan(s[0]) + tZhi(s[1]);
 }
 
 export default function ReadingPage() {
@@ -69,12 +79,12 @@ export default function ReadingPage() {
       });
   }, [id]);
 
-  if (loading) return <LoadingSpinner message="加载命盘数据..." />;
+  if (loading) return <LoadingSpinner message="Loading chart..." />;
   if (error) {
     return (
       <main className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
         <p className="text-red-600">{error}</p>
-        <Link href="/" className="text-amber-600 hover:underline">返回首页</Link>
+        <Link href="/" className="text-amber-600 hover:underline">Back</Link>
       </main>
     );
   }
@@ -92,55 +102,71 @@ export default function ReadingPage() {
 
   const mingGong = zw?.gongs?.[0];
   const shenGongIdx = zw?.shenGongIndex;
+  // logic reads raw Chinese dizhi (chart stays Chinese) — unchanged
   const shenGong = zw?.gongs?.find((g: any) =>
     g.dizhi === ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][shenGongIdx]
   );
 
-  const allSihua = zw?.gongs?.flatMap((g: any) => (g.sihua || []).map((s: any) => `${s.star}${s.hua}`)) || [];
+  const allSihua = zw?.gongs?.flatMap((g: any) =>
+    (g.sihua || []).map((s: any) => `${tStar(s.star)} ${tSiHua(s.hua)}`)
+  ) || [];
+
+  // dayun interpretation — logic on raw Chinese shishen, English output
+  const dayunInterpret = (g: any) => {
+    const ss = g?.ganShiShen || '';
+    if (ss.includes('印')) return 'A prime period for learning and growth — leverage platforms to rise.';
+    if (ss.includes('财')) return 'A wealth-building phase — balance earning with saving.';
+    if (ss.includes('官') || ss.includes('杀')) return 'Pressure and opportunity coexist — turn pressure into momentum.';
+    return 'A life-transition phase — go with the flow of the times.';
+  };
+
+  const fourPillars = bz?.siZhu
+    ? `${fmtGanZhi(bz.siZhu.year.gan + bz.siZhu.year.zhi)} ${fmtGanZhi(bz.siZhu.month.gan + bz.siZhu.month.zhi)} ${fmtGanZhi(bz.siZhu.day.gan + bz.siZhu.day.zhi)} ${fmtGanZhi(bz.siZhu.hour.gan + bz.siZhu.hour.zhi)}`
+    : '-';
 
   return (
     <main className="flex-1 max-w-3xl mx-auto px-4 py-8 w-full space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <Link href="/" className="text-amber-600 hover:text-amber-700 text-sm font-medium">
-          ← 返回首页
+          ← Back
         </Link>
         <Link
           href={`/poster/${id}`}
           className="bg-stone-800 hover:bg-stone-900 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
         >
-          查看英文海报
+          View Poster
         </Link>
       </div>
 
       <div>
-        <h1 className="text-2xl font-bold text-stone-800 mb-1">命盘解读</h1>
+        <h1 className="text-2xl font-bold text-stone-800 mb-1">Chart Reading</h1>
         <p className="text-stone-500 text-sm">
-          {bi?.gender === 'male' ? '男' : '女'} · {bi?.year}-{String(bi?.month).padStart(2, '0')}-{String(bi?.day).padStart(2, '0')} · {bi?.isLunar ? '农历' : '公历'}
+          {bi?.gender === 'male' ? 'Male' : 'Female'} · {bi?.year}-{String(bi?.month).padStart(2, '0')}-{String(bi?.day).padStart(2, '0')} · {bi?.isLunar ? 'Lunar' : 'Gregorian'}
         </p>
       </div>
 
       {/* Overview */}
-      <Card title="命局总览">
+      <Card title="Overview">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <h3 className="text-xs text-stone-400 uppercase tracking-wide mb-2">八字</h3>
+            <h3 className="text-xs text-stone-400 uppercase tracking-wide mb-2">BaZi</h3>
             <div className="space-y-0.5">
-              <InfoRow label="格局" value={en?.['格局']?.primary || '-'} />
-              <InfoRow label="日主" value={`${bz?.dayMaster}土` || '-'} />
-              <InfoRow label="旺衰" value={`${en?.['旺衰']?.verdict || '-'} (${en?.['旺衰']?.score ?? '-'})`} />
-              <InfoRow label="调候" value={(en?.['调候用神'] || []).join('、') || '-'} />
-              <InfoRow label="四柱" value={`${bz?.siZhu?.year.gan}${bz?.siZhu?.year.zhi} ${bz?.siZhu?.month.gan}${bz?.siZhu?.month.zhi} ${bz?.siZhu?.day.gan}${bz?.siZhu?.day.zhi} ${bz?.siZhu?.hour.gan}${bz?.siZhu?.hour.zhi}`} />
+              <InfoRow label="Structure" value={tGeju(en?.['格局']?.primary) || '-'} />
+              <InfoRow label="Day Master" value={`${tGan(bz?.dayMaster)} Earth` || '-'} />
+              <InfoRow label="Strength" value={`${tWangShuai(en?.['旺衰']?.verdict) || '-'} (${en?.['旺衰']?.score ?? '-'})`} />
+              <InfoRow label="Seasonal Need" value={(en?.['调候用神'] || []).map(tGan).join(', ') || '-'} />
+              <InfoRow label="Four Pillars" value={fourPillars} />
             </div>
           </div>
           <div>
-            <h3 className="text-xs text-stone-400 uppercase tracking-wide mb-2">紫微</h3>
+            <h3 className="text-xs text-stone-400 uppercase tracking-wide mb-2">Ziwei</h3>
             <div className="space-y-0.5">
-              <InfoRow label="命宫" value={`${mingGong?.dizhi} · ${(mingGong?.mainStars || []).join('·') || '无主星'}`} />
-              <InfoRow label="身宫" value={`${shenGong?.gong || ''} · ${(shenGong?.mainStars || []).join('·') || '-'}`} />
-              <InfoRow label="五行局" value={zw?.wuXingJu?.name || '-'} />
-              <InfoRow label="生年四化" value={allSihua.join(' · ') || '-'} />
-              <InfoRow label="阴阳" value={zw?.yinYang || '-'} />
+              <InfoRow label="Life Palace" value={`${tZhi(mingGong?.dizhi)} · ${(mingGong?.mainStars || []).map(tStar).join(' · ') || 'No Major Star'}`} />
+              <InfoRow label="Body Palace" value={`${tPalace(shenGong?.gong) || ''} · ${(shenGong?.mainStars || []).map(tStar).join(' · ') || '-'}`} />
+              <InfoRow label="Element Frame" value={tWuXingJu(zw?.wuXingJu?.name) || '-'} />
+              <InfoRow label="Annual Transformations" value={allSihua.join(' · ') || '-'} />
+              <InfoRow label="Yin/Yang" value={tYinYang(zw?.yinYang) || '-'} />
             </div>
           </div>
         </div>
@@ -148,35 +174,32 @@ export default function ReadingPage() {
 
       {/* Current Dayun */}
       {dayunCurrent && (
-        <Card title="当前大运">
+        <Card title="Current Luck Cycle">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-2xl font-bold text-amber-700">
-              {dayunCurrent.ganZhi.gan}{dayunCurrent.ganZhi.zhi}
+              {tGan(dayunCurrent.ganZhi.gan)}{tZhi(dayunCurrent.ganZhi.zhi)}
             </span>
             <span className="text-stone-500 text-sm">
-              {dayunCurrent.startYear}-{dayunCurrent.endYear} · {dayunCurrent.ganShiShen}/{dayunCurrent.zhiShiShen}
+              {dayunCurrent.startYear}-{dayunCurrent.endYear} · {tShiShen(dayunCurrent.ganShiShen)}/{tShiShen(dayunCurrent.zhiShiShen)}
             </span>
           </div>
           <p className="text-stone-600 text-sm">
-            此运{dayunCurrent.ganShiShen?.includes('印') ? '学习成长黄金期，借平台之力攀升' :
-              dayunCurrent.ganShiShen?.includes('财') ? '财富积累期，开源节流并重' :
-              dayunCurrent.ganShiShen?.includes('官') || dayunCurrent.ganShiShen?.includes('杀') ? '压力与机遇并存，化压力为动力' :
-              '人生转折阶段，顺势而为'}
+            {dayunInterpret(dayunCurrent)}
           </p>
         </Card>
       )}
 
       {/* 12 Gongs */}
-      <Card title="紫微十二宫">
+      <Card title="Ziwei 12 Palaces">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {(zw?.gongs || []).map((g: any) => (
             <div key={g.gong} className="bg-stone-50 rounded-lg p-3 text-sm">
-              <div className="text-stone-400 text-xs mb-1">{g.tiangan}{g.dizhi} · {g.gong}</div>
+              <div className="text-stone-400 text-xs mb-1">{tGan(g.tiangan)}{tZhi(g.dizhi)} · {tPalace(g.gong)}</div>
               <div className="font-medium text-stone-800">
-                {g.mainStars?.length > 0 ? g.mainStars.join('·') : '无主星'}
+                {g.mainStars?.length > 0 ? g.mainStars.map(tStar).join(' · ') : 'No Major Star'}
               </div>
               {g.auxStars?.length > 0 && (
-                <div className="text-stone-500 text-xs mt-0.5">{g.auxStars.join('·')}</div>
+                <div className="text-stone-500 text-xs mt-0.5">{g.auxStars.map(tStar).join(' · ')}</div>
               )}
             </div>
           ))}
@@ -184,7 +207,7 @@ export default function ReadingPage() {
       </Card>
 
       {/* Bazi Dayun */}
-      <Card title="八字大运">
+      <Card title="BaZi Luck Cycles">
         <div className="overflow-x-auto">
           <div className="flex gap-1 min-w-max">
             {(bz?.dayun || []).slice(0, 10).map((d: any) => {
@@ -197,11 +220,11 @@ export default function ReadingPage() {
                     active ? 'bg-amber-100 border border-amber-300' : 'bg-stone-50'
                   }`}
                 >
-                  <div className="text-xs text-stone-400">{d.startAge}-{d.endAge || d.startAge + 9}岁</div>
+                  <div className="text-xs text-stone-400">{d.startAge}-{d.endAge || d.startAge + 9}yr</div>
                   <div className={`text-sm font-bold ${active ? 'text-amber-800' : 'text-stone-700'}`}>
-                    {d.ganZhi.gan}{d.ganZhi.zhi}
+                    {tGan(d.ganZhi.gan)}{tZhi(d.ganZhi.zhi)}
                   </div>
-                  <div className="text-xs text-stone-400">{d.ganShiShen}/{d.zhiShiShen}</div>
+                  <div className="text-xs text-stone-400">{tShiShen(d.ganShiShen)}/{tShiShen(d.zhiShiShen)}</div>
                 </div>
               );
             })}
@@ -210,7 +233,7 @@ export default function ReadingPage() {
       </Card>
 
       {/* LLM Analysis */}
-      <Card title="专业命理解读">
+      <Card title="Professional Reading">
         <div className="flex flex-wrap gap-2 mb-4">
           <button
             onClick={() => runLLM('bazi')}
@@ -221,7 +244,7 @@ export default function ReadingPage() {
                 : 'bg-amber-600 text-white hover:bg-amber-700'
             }`}
           >
-            {llmLoading && llmType === 'bazi' ? '生成中...' : '八字解读'}
+            {llmLoading && llmType === 'bazi' ? 'Generating...' : 'BaZi Analysis'}
           </button>
           <button
             onClick={() => runLLM('ziwei')}
@@ -232,7 +255,7 @@ export default function ReadingPage() {
                 : 'bg-purple-600 text-white hover:bg-purple-700'
             }`}
           >
-            {llmLoading && llmType === 'ziwei' ? '生成中...' : '紫微解读'}
+            {llmLoading && llmType === 'ziwei' ? 'Generating...' : 'Ziwei Analysis'}
           </button>
           <button
             onClick={() => runLLM('combined')}
@@ -243,7 +266,7 @@ export default function ReadingPage() {
                 : 'bg-stone-700 text-white hover:bg-stone-800'
             }`}
           >
-            {llmLoading && llmType === 'combined' ? '生成中...' : '综合印证'}
+            {llmLoading && llmType === 'combined' ? 'Generating...' : 'Combined Analysis'}
           </button>
         </div>
 
@@ -259,7 +282,7 @@ export default function ReadingPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            正在生成{llmType === 'bazi' ? '八字' : llmType === 'ziwei' ? '紫微' : '综合'}解读，请稍候...
+            Generating {llmType === 'bazi' ? 'BaZi' : llmType === 'ziwei' ? 'Ziwei' : 'combined'} reading, please wait...
           </div>
         )}
 
@@ -271,7 +294,7 @@ export default function ReadingPage() {
 
         {!llmText && !llmLoading && !llmError && (
           <p className="text-stone-400 text-sm">
-            点击上方按钮，将根据命盘数据为你生成深度解读报告（需配置 LLM_API_KEY）。
+            Tap a button above to generate a deep reading from your chart data (requires LLM_API_KEY).
           </p>
         )}
       </Card>
@@ -282,25 +305,25 @@ export default function ReadingPage() {
           onClick={() => setShowRaw(!showRaw)}
           className="text-stone-400 hover:text-stone-600 text-xs underline"
         >
-          {showRaw ? '收起原始命盘' : '查看原始命盘数据'}
+          {showRaw ? 'Hide raw chart data' : 'Show raw chart data'}
         </button>
       </div>
 
       {showRaw && (
         <pre className="bg-stone-900 text-stone-200 p-6 rounded-xl text-xs leading-relaxed overflow-x-auto whitespace-pre font-mono">
-          {data?.chartText || '暂无数据'}
+          {data?.chartText || 'No data'}
         </pre>
       )}
 
       {/* Footer */}
       <div className="text-center pt-4">
         <Link href="/" className="text-amber-600 hover:underline text-sm">
-          为新用户生成命盘 →
+          Generate a chart for someone new →
         </Link>
       </div>
 
       <p className="text-center text-xs text-stone-400 pt-4 pb-8">
-        本命盘由算法层（Yiqi + enrichBazi）自动生成 · 仅供文化研究与娱乐参考
+        Chart auto-generated by the algorithm layer (Yiqi + enrichBaZi) · For cultural study and entertainment only
       </p>
     </main>
   );

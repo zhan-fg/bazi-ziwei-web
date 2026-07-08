@@ -7,11 +7,63 @@
 //     --template=../templates/report-zonghe-poster.html \
 //     --output=path/to/output.html
 //
-// chart.json: run-chart.ts 的输出 (算法层)
-// analysis.json: LLM 按 zonghe-poster.md schema 输出的 JSON
+// chart.json: run-chart.ts 的输出 (算法层, 原始中文)
+// analysis.json: LLM 按 zonghe-poster.md schema 输出的 JSON (英文)
+//
+// 翻译策略: chart 保持原始中文 (算法 enum 键, 用于模板占位符 key 匹配);
+// 所有显示给用户的值在 emit 时过 glossary → 英文/拼音.
 
 import * as fs from 'fs';
 import * as path from 'path';
+
+// ============ GLOSSARY (shared with ../lib/glossary.json) ============
+function loadGlossary(): any {
+  const candidates = [
+    path.join(process.cwd(), '..', 'lib', 'glossary.json'),   // cwd = calculator/
+    path.join(process.cwd(), 'lib', 'glossary.json'),         // cwd = repo root
+    path.join(__dirname, '..', '..', 'lib', 'glossary.json'), // from dist/
+    path.join(__dirname, '..', 'lib', 'glossary.json'),       // from calculator/ (tsx)
+  ];
+  for (const p of candidates) {
+    try { if (fs.existsSync(p)) return JSON.parse(fs.readFileSync(p, 'utf-8')); } catch {}
+  }
+  return {};
+}
+const G = loadGlossary();
+function pick(dict: any, term: string | undefined | null | any): string {
+  if (term === undefined || term === null || term === '') return '';
+  const v = dict?.[String(term)];
+  return v !== undefined ? v : String(term);
+}
+const tStar = (s?: any) => pick(G.stars, s);
+const tPalace = (s?: any) => {
+  if (!s) return '';
+  if (G.palaces[s]) return G.palaces[s];
+  const base = String(s).endsWith('宫') ? String(s).slice(0, -1) : String(s);
+  return G.palaces[base] ?? String(s);
+};
+const tGan = (s?: any) => pick(G.stems, s);
+const tZhi = (s?: any) => pick(G.branches, s);
+const tGanZhi = (s?: any) => {
+  if (!s) return '';
+  const str = String(s);
+  if (str.length >= 2) return tGan(str[0]) + tZhi(str[1]);
+  if (G.stems[str]) return G.stems[str];
+  if (G.branches[str]) return G.branches[str];
+  return str;
+};
+const tElement = (s?: any) => pick(G.elements, s);
+const tYinYang = (s?: any) => pick(G.yinyang, s);
+const tShiShen = (s?: any) => pick(G.shishen, s);
+const tShiShenShort = (s?: any) => pick(G.shishenShort, s);
+const tSiHua = (s?: any) => pick(G.sihua, s);
+const tWangXiang = (s?: any) => pick(G.wangxiang, s);
+const tGeju = (s?: any) => pick(G.geju, s);
+const tWangShuai = (s?: any) => pick(G.wangshuai, s);
+const tConfidence = (s?: any) => pick(G.confidence, s);
+const tZhangSheng = (s?: any) => pick(G.zhangsheng, s);
+const tWuXingJu = (s?: any) => pick(G.wuxingju, s);
+const tNaYin = (s?: any) => pick(G.nayin, s);
 
 function parseArgs(): Record<string, string> {
   const args: Record<string, string> = {};
@@ -23,6 +75,7 @@ function parseArgs(): Record<string, string> {
 }
 
 const DIZHI = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+const ELEMENTS_CN = ['木','火','土','金','水'];
 
 function calcVirtualAge(birthYear: number, currentYear: number): number {
   return currentYear - birthYear + 1;
@@ -38,109 +91,109 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
 
   // ============ META ============
   out['meta.solar_date'] = `${bi.year}-${String(bi.month).padStart(2,'0')}-${String(bi.day).padStart(2,'0')} ${String(bi.hour).padStart(2,'0')}:${String(bi.minute).padStart(2,'0')}`;
-  if (zw.lunarDate) {
-    out['meta.lunar_date'] = `${zw.lunarDate.year}年 ${zw.lunarDate.monthCn}月${zw.lunarDate.dayCn} ${zw.lunarDate.hourCn || ''}`.trim();
+  if (zw.lunarDate && zw.lunarDate.year) {
+    const L = zw.lunarDate;
+    out['meta.lunar_date'] = `${L.year}-${String(L.month).padStart(2,'0')}-${String(L.day).padStart(2,'0')} (Lunar)`;
   } else {
     out['meta.lunar_date'] = '-';
   }
-  out['meta.gender_full'] = bi.gender === 'male' ? '男（' + (zw.yinYang || '') + '）' : '女（' + (zw.yinYang || '') + '）';
+  out['meta.gender_full'] = bi.gender === 'male' ? 'Male' : 'Female';
   out['meta.age_virtual'] = virtualAge.toString();
   out['meta.current_year'] = currentYear.toString();
   const now = new Date();
   out['meta.gen_time'] = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-  out['meta.yinyang'] = zw.yinYang || '-';
+  out['meta.yinyang'] = tYinYang(zw.yinYang) || '-';
 
   // ============ ZIWEI META ============
-  // Yiqi 没明确输出 命主/身主/子年斗君 — 从十二宫推导 / 留空
-  // 简化: 默认根据命宫地支查命主, 身宫地支查身主
   const MING_ZHU = { '子':'贪狼','丑':'巨门','寅':'禄存','卯':'文曲','辰':'廉贞','巳':'武曲','午':'破军','未':'武曲','申':'廉贞','酉':'文曲','戌':'禄存','亥':'巨门' };
   const SHEN_ZHU = { '子':'火星','丑':'天相','寅':'天梁','卯':'天同','辰':'文昌','巳':'天机','午':'火星','未':'天相','申':'天梁','酉':'天同','戌':'文昌','亥':'天机' };
   const mingDizhi = zw.gongs[0].dizhi;
   const shenDizhi = DIZHI[zw.shenGongIndex];
-  out['ziwei.ming_zhu'] = (MING_ZHU as any)[mingDizhi] || '-';
-  out['ziwei.shen_zhu'] = (SHEN_ZHU as any)[shenDizhi] || '-';
-  // 子年斗君: 简化处理, 按生月+生时推算复杂, 暂用身宫前后位作占位
+  out['ziwei.ming_zhu'] = tStar((MING_ZHU as any)[mingDizhi]) || '-';
+  out['ziwei.shen_zhu'] = tStar((SHEN_ZHU as any)[shenDizhi]) || '-';
   out['ziwei.zi_dou_jun'] = zw.ziDouJun || '-';
-  out['ziwei.wuxing_ju'] = zw.wuXingJu?.name || '-';
+  out['ziwei.wuxing_ju'] = tWuXingJu(zw.wuXingJu?.name) || '-';
 
   // ============ CORE DATA ============
   const en = bz.enrichment;
-  out['core.geju'] = en?.格局?.primary || '-';
-  out['core.geju_confidence'] = en?.格局?.confidence || '-';
-  out['core.wangshuai_verdict'] = en?.旺衰?.verdict || '-';
+  out['core.geju'] = tGeju(en?.格局?.primary) || '-';
+  out['core.geju_confidence'] = tConfidence(en?.格局?.confidence) || '-';
+  out['core.wangshuai_verdict'] = tWangShuai(en?.旺衰?.verdict) || '-';
   out['core.wangshuai_score'] = en?.旺衰?.score?.toString() || '-';
-  // 把 score 映射到 0-100% (假设 score -10 ~ +10)
   const ws = en?.旺衰?.score ?? 0;
   out['core.wangshuai_pos_pct'] = Math.max(0, Math.min(100, Math.round((ws + 10) * 5))).toString();
   const tc = en?.调候用神 || [];
-  out['core.tiaohou.0'] = tc[0] || '-';
-  out['core.tiaohou.1'] = tc[1] || '-';
-  out['core.tiaohou_confidence'] = '高';
+  out['core.tiaohou.0'] = tGan(tc[0]) || '-';
+  out['core.tiaohou.1'] = tGan(tc[1]) || '-';
+  out['core.tiaohou_confidence'] = tConfidence('高');
 
   const yl = en?.五行旺相 || {};
-  for (const k of ['木','火','土','金','水']) {
-    out[`core.yueling.${k}`] = yl[k] || '-';
+  for (const k of ELEMENTS_CN) {
+    out[`core.yueling.${tElement(k)}`] = tWangXiang(yl[k]) || '-';
   }
 
   const wx = en?.五行统计?.withCangGan || en?.五行统计 || { 木:0,火:0,土:0,金:0,水:0 };
-  for (const k of ['木','火','土','金','水']) out[`core.wuxing.${k}`] = wx[k] ?? '-';
-  const wxMax = Math.max(...['木','火','土','金','水'].map(k => +wx[k] || 0)) || 1;
-  for (const k of ['木','火','土','金','水']) out[`core.wuxing_pct.${k}`] = Math.round(((+wx[k] || 0) / wxMax) * 100);
+  for (const k of ELEMENTS_CN) out[`core.wuxing.${tElement(k)}`] = wx[k] ?? '-';
+  const wxMax = Math.max(...ELEMENTS_CN.map(k => +wx[k] || 0)) || 1;
+  for (const k of ELEMENTS_CN) out[`core.wuxing_pct.${tElement(k)}`] = Math.round(((+wx[k] || 0) / wxMax) * 100);
 
   // ============ ZIWEI 12 GONGS ============
-  const sihuaCharMap: any = { 化禄:'禄', 化权:'权', 化科:'科', 化忌:'忌' };
+  // 四化: 可见 tag 用英文 (Lu/Quan/Ke/Ji), CSS class 保留中文以对齐模板 .sihua-禄 样式
+  const sihuaTagText: any = { 化禄:'Lu', 化权:'Quan', 化科:'Ke', 化忌:'Ji' };
+  const sihuaClassKey: any = { 化禄:'禄', 化权:'权', 化科:'科', 化忌:'忌' };
+  const fmtStarWithSihua = (s: string, sihua: any[]): string => {
+    const sh = (sihua || []).find((x: any) => x.star === s);
+    if (sh) {
+      const cls = sihuaClassKey[sh.hua] || sh.hua;
+      const tag = sihuaTagText[sh.hua] || sh.hua;
+      return `<span class="sihua-${cls}">${tStar(s)}<span class="sihua-tag">${tag}</span></span>`;
+    }
+    return tStar(s);
+  };
   for (const g of zw.gongs) {
     const mainStarsHtml = (g.mainStars && g.mainStars.length > 0)
-      ? g.mainStars.map((s: string) => {
-          const sh = (g.sihua || []).find((x: any) => x.star === s);
-          if (sh) {
-            const huaChar = sihuaCharMap[sh.hua] || sh.hua.slice(-1);
-            return `<span class="sihua-${huaChar}">${s}<span class="sihua-tag">${huaChar}</span></span>`;
-          }
-          return s;
-        }).join('·')
-      : '<span style="color:var(--ink-faint)">无主星</span>';
-    // 辅星同样要处理四化（右弼化科 / 文昌化忌 / 文曲化科 等常落辅星）
+      ? g.mainStars.map((s: string) => fmtStarWithSihua(s, g.sihua)).join(' · ')
+      : '<span style="color:var(--ink-faint)">No Major Star</span>';
     const auxStarsHtml = (g.auxStars && g.auxStars.length > 0)
-      ? g.auxStars.map((s: string) => {
-          const sh = (g.sihua || []).find((x: any) => x.star === s);
-          if (sh) {
-            const huaChar = sihuaCharMap[sh.hua] || sh.hua.slice(-1);
-            return `<span class="sihua-${huaChar}">${s}<span class="sihua-tag">${huaChar}</span></span>`;
-          }
-          return s;
-        }).join('·')
+      ? g.auxStars.map((s: string) => fmtStarWithSihua(s, g.sihua)).join(' · ')
       : '—';
-    out[`gongs.${g.dizhi}.name`] = g.gong.endsWith('宫') ? g.gong : g.gong + '宫';
-    out[`gongs.${g.dizhi}.ganzhi`] = g.tiangan + g.dizhi;
+    const tiangan = g.tiangan || '';
+    const ganzhi = tiangan.length >= 2 ? tGanZhi(tiangan) : (tGan(tiangan) + tZhi(g.dizhi));
+    out[`gongs.${g.dizhi}.name`] = tPalace(g.gong);
+    out[`gongs.${g.dizhi}.ganzhi`] = ganzhi;
     out[`gongs.${g.dizhi}.mainStarsHtml`] = mainStarsHtml;
     out[`gongs.${g.dizhi}.auxStars`] = auxStarsHtml;
     out[`gongs.${g.dizhi}.smallStars`] = '';
     out[`gongs.${g.dizhi}.daxian_range`] = g.daXian ? `${g.daXian.startAge}-${g.daXian.endAge}` : '-';
-    // 命宫红框 / 身宫徽标 / 当前大限高亮 — 数据驱动, 不硬编码到模板
     const flags: string[] = [];
     if (g.dizhi === mingDizhi) flags.push('ming');
     if (g.dizhi === shenDizhi) flags.push('shen');
     if (g.daXian && g.daXian.startAge <= virtualAge && virtualAge <= g.daXian.endAge) flags.push('current-daxian');
     out[`gongs.${g.dizhi}.flag`] = flags.join(' ');
-    out[`gongs.${g.dizhi}.shenBadge`] = (g.dizhi === shenDizhi) ? '<span class="shen-badge">身</span>' : '';
+    out[`gongs.${g.dizhi}.shenBadge`] = (g.dizhi === shenDizhi) ? '<span class="shen-badge">Body</span>' : '';
   }
 
   // ============ BAZI 4 PILLARS ============
-  const cangGanFmt = (arr: any[]) => (arr || []).map((x: any) => `${x.gan}(${x.shiShen})`).join(' ');
+  const cangGanFmt = (arr: any[]) => (arr || []).map((x: any) => `${tGan(x.gan)}(${tShiShenShort(x.shiShen)})`).join(' ');
   const pillarKeyToCn: any = { year: '年', month: '月', day: '日', hour: '时' };
   for (const k of ['year','month','day','hour']) {
-    out[`bazi.${k}.shiShen`] = bz.shiShen?.[k] || '-';
-    out[`bazi.${k}.gan`] = bz.siZhu[k].gan;
-    out[`bazi.${k}.zhi`] = bz.siZhu[k].zhi;
+    out[`bazi.${k}.shiShen`] = tShiShen(bz.shiShen?.[k]) || '-';
+    out[`bazi.${k}.gan`] = tGan(bz.siZhu[k].gan);
+    out[`bazi.${k}.zhi`] = tZhi(bz.siZhu[k].zhi);
     out[`bazi.${k}.cangGanHtml`] = cangGanFmt(bz.cangGan?.[k] || []);
-    out[`bazi.${k}.zhangSheng`] = bz.zhangSheng?.[k] || '-';
-    out[`bazi.${k}.ziZuo`] = en?.自坐?.[pillarKeyToCn[k]] || en?.自坐?.[k] || '-';
-    out[`bazi.${k}.naYin`] = bz.naYin?.[k] || '-';
+    out[`bazi.${k}.zhangSheng`] = tZhangSheng(bz.zhangSheng?.[k]) || '-';
+    const ziZuoRaw = en?.自坐?.[pillarKeyToCn[k]] || en?.自坐?.[k];
+    out[`bazi.${k}.ziZuo`] = tZhangSheng(ziZuoRaw) || '-';
+    out[`bazi.${k}.naYin`] = tNaYin(bz.naYin?.[k]) || '-';
   }
   out['bazi.dayunStart'] = bz.dayunStart?.toString() || '-';
 
   // ============ DAYUN 10 ============
+  const fmtShortShiShen = (gan?: string, zhi?: string): string => {
+    const sg = gan ? tShiShenShort(gan) : '';
+    const sz = zhi ? tShiShenShort(zhi) : '';
+    return sg && sz ? `${sg}/${sz}` : (sg || sz);
+  };
   const dayunArr = (bz.dayun || []).slice(0, 10);
   let currentDayun: any = null;
   for (let i = 0; i < 10; i++) {
@@ -153,16 +206,13 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
       ['gz','age_range','shishen','current_class'].forEach(f => out[`dayun.${i}.${f}`] = '-');
       continue;
     }
-    out[`dayun.${i}.gz`] = d.ganZhi.gan + d.ganZhi.zhi;
+    out[`dayun.${i}.gz`] = tGan(d.ganZhi.gan) + tZhi(d.ganZhi.zhi);
     out[`dayun.${i}.age_range`] = `${d.startAge}-${d.endAge}`;
-    const sg = (d.ganShiShen || '').slice(0,1);
-    const sz = (d.zhiShiShen || '').slice(0,1);
-    out[`dayun.${i}.shishen`] = sg + sz;
+    out[`dayun.${i}.shishen`] = fmtShortShiShen(d.ganShiShen, d.zhiShiShen);
     out[`dayun.${i}.current_class`] = (currentDayun && d === currentDayun) ? 'current dayun' : '';
   }
 
   // ============ SECTION 02 阶段印证时间轴 (从 chart 算, 不靠 LLM) ============
-  // 八字大运: 前 7 段
   const dayunForStage = dayunArr.slice(0, 7);
   for (let i = 0; i < 7; i++) {
     const d = dayunForStage[i];
@@ -171,14 +221,11 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
       continue;
     }
     out[`section_02.bazi.${i}.range`] = `${d.startAge}-${d.endAge}`;
-    out[`section_02.bazi.${i}.gz`] = d.ganZhi.gan + d.ganZhi.zhi;
-    const sg = (d.ganShiShen || '').slice(0,1);
-    const sz = (d.zhiShiShen || '').slice(0,1);
-    out[`section_02.bazi.${i}.shishen`] = sg + sz;
+    out[`section_02.bazi.${i}.gz`] = tGan(d.ganZhi.gan) + tZhi(d.ganZhi.zhi);
+    out[`section_02.bazi.${i}.shishen`] = fmtShortShiShen(d.ganShiShen, d.zhiShiShen);
     out[`section_02.bazi.${i}.current_class`] = (d.startAge <= virtualAge && virtualAge <= d.endAge) ? 'current' : '';
   }
 
-  // 紫微大限: 按 startAge 排序取前 7 段
   const ziweiDaxian = zw.gongs
     .filter((g: any) => g.daXian)
     .map((g: any) => ({ startAge: g.daXian.startAge, endAge: g.daXian.endAge, gong: g.gong }))
@@ -196,7 +243,7 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
 
   // ============ LIUNIAN 10 (current dayun) ============
   if (currentDayun) {
-    out['liunian_dayun_label'] = `${currentDayun.ganZhi.gan}${currentDayun.ganZhi.zhi} ${currentDayun.startAge}-${currentDayun.endAge}`;
+    out['liunian_dayun_label'] = `${tGan(currentDayun.ganZhi.gan)}${tZhi(currentDayun.ganZhi.zhi)} ${currentDayun.startAge}-${currentDayun.endAge}`;
   } else {
     out['liunian_dayun_label'] = '-';
   }
@@ -209,8 +256,8 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
     }
     out[`liunian.${i}.year`] = ln.year;
     out[`liunian.${i}.age`] = ln.age;
-    out[`liunian.${i}.gz`] = ln.ganZhi.gan + ln.ganZhi.zhi;
-    out[`liunian.${i}.shishen`] = ln.ganShiShen ? (ln.ganShiShen.slice(0,1) + (ln.zhiShiShen?.slice(0,1) || '')) : '';
+    out[`liunian.${i}.gz`] = tGan(ln.ganZhi.gan) + tZhi(ln.ganZhi.zhi);
+    out[`liunian.${i}.shishen`] = fmtShortShiShen(ln.ganShiShen, ln.zhiShiShen);
     out[`liunian.${i}.current_class`] = (ln.age === virtualAge) ? 'current' : '';
   }
 
