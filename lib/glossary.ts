@@ -29,17 +29,22 @@ export const tPalace = (s?: string | null) => {
   return pick(G.palaces as Dict, base);
 };
 export const tPalaceBody = (s?: string | null) => pick(G.palaceBodies as Dict, s);
-export const tGan = (s?: string | null) => pick(G.stems as Dict, s);
+export const tGan = (s?: string | null) => {
+  if (!s) return "";
+  const en = G.stems[s];
+  return en ? `${en} ${s}` : s;
+};
 export const tGanElement = (s?: string | null) => pick(G.stemElements as Dict, s);
-export const tZhi = (s?: string | null) => pick(G.branches as Dict, s);
-// Translate a 2-char stem-branch string (e.g. "癸丑" → "GuiChou").
+export const tZhi = (s?: string | null) => {
+  if (!s) return "";
+  const en = G.branches[s];
+  return en ? `${en} ${s}` : s;
+};
+// Translate a 2-char stem-branch string (e.g. "癸丑" → "Gui 癸 Chou 丑").
 export const tGanZhi = (s?: string | null) => {
   if (!s) return "";
-  if (s.length >= 2) return tGan(s[0]) + tZhi(s[1]);
-  // single char: try stem, then branch
-  if (pick(G.stems as Dict, s) !== s) return pick(G.stems as Dict, s);
-  if (pick(G.branches as Dict, s) !== s) return pick(G.branches as Dict, s);
-  return s;
+  if (s.length >= 2) return tGan(s[0]) + " " + tZhi(s[1]);
+  return tGan(s) || tZhi(s) || s;
 };
 export const tElement = (s?: string | null) => pick(G.elements as Dict, s);
 export const tYinYang = (s?: string | null) => pick(G.yinyang as Dict, s);
