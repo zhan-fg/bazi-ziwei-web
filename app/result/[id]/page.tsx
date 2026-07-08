@@ -232,7 +232,7 @@ export default function ResultPage() {
                 const age = new Date().getFullYear() - bi.year + 1;
                 return d.startAge <= age && age <= (d.endAge || d.startAge + 9);
               });
-              return d ? `${tGan(d.ganZhi.gan)}${tZhi(d.ganZhi.zhi)}` : '-';
+              return d ? `${tGan(d.ganZhi.gan)} ${tZhi(d.ganZhi.zhi)}` : '-';
             })()],
           ].map(([label, val]) => (
             <div key={label} className="bg-stone-50 rounded-lg p-3 text-center">

@@ -28,6 +28,12 @@ function pick(dict, term) {
   const v = dict ? dict[String(term)] : undefined;
   return v !== undefined ? v : String(term);
 }
+function bilingual(dict, term) {
+  if (term === undefined || term === null || term === "") return "";
+  const raw = String(term);
+  const en = dict ? dict[raw] : undefined;
+  return en !== undefined ? `${en} ${raw}` : raw;
+}
 const tStar = (s) => pick(G.stars, s);
 const tPalace = (s) => {
   if (!s) return "";
@@ -35,14 +41,14 @@ const tPalace = (s) => {
   const base = String(s).endsWith("宫") ? String(s).slice(0, -1) : String(s);
   return (G.palaces[base] !== undefined) ? G.palaces[base] : String(s);
 };
-const tGan = (s) => pick(G.stems, s);
-const tZhi = (s) => pick(G.branches, s);
+const tGan = (s) => bilingual(G.stems, s);
+const tZhi = (s) => bilingual(G.branches, s);
 const tGanZhi = (s) => {
   if (!s) return "";
   const str = String(s);
-  if (str.length >= 2) return tGan(str[0]) + tZhi(str[1]);
-  if (G.stems[str]) return G.stems[str];
-  if (G.branches[str]) return G.branches[str];
+  if (str.length >= 2) return `${tGan(str[0])} ${tZhi(str[1])}`;
+  if (G.stems[str]) return tGan(str);
+  if (G.branches[str]) return tZhi(str);
   return str;
 };
 const tElement = (s) => pick(G.elements, s);
@@ -150,7 +156,7 @@ function chartToFlat(chart, currentYear) {
       ? g.auxStars.map((s) => fmtStarWithSihua(s, g.sihua)).join(" · ")
       : "—";
     const tiangan = g.tiangan || "";
-    const ganzhi = tiangan.length >= 2 ? tGanZhi(tiangan) : (tGan(tiangan) + tZhi(g.dizhi));
+    const ganzhi = tiangan.length >= 2 ? tGanZhi(tiangan) : `${tGan(tiangan)} ${tZhi(g.dizhi)}`;
     out[`gongs.${g.dizhi}.name`] = tPalace(g.gong);
     out[`gongs.${g.dizhi}.ganzhi`] = ganzhi;
     out[`gongs.${g.dizhi}.mainStarsHtml`] = mainStarsHtml;
@@ -198,7 +204,7 @@ function chartToFlat(chart, currentYear) {
       ["gz", "age_range", "shishen", "current_class"].forEach((f) => (out[`dayun.${i}.${f}`] = "-"));
       continue;
     }
-    out[`dayun.${i}.gz`] = tGan(d.ganZhi.gan) + tZhi(d.ganZhi.zhi);
+    out[`dayun.${i}.gz`] = `${tGan(d.ganZhi.gan)} ${tZhi(d.ganZhi.zhi)}`;
     out[`dayun.${i}.age_range`] = `${d.startAge}-${d.endAge}`;
     out[`dayun.${i}.shishen`] = fmtShortShiShen(d.ganShiShen, d.zhiShiShen);
     out[`dayun.${i}.current_class`] = (currentDayun && d === currentDayun) ? "current dayun" : "";
@@ -213,7 +219,7 @@ function chartToFlat(chart, currentYear) {
       continue;
     }
     out[`section_02.bazi.${i}.range`] = `${d.startAge}-${d.endAge}`;
-    out[`section_02.bazi.${i}.gz`] = tGan(d.ganZhi.gan) + tZhi(d.ganZhi.zhi);
+    out[`section_02.bazi.${i}.gz`] = `${tGan(d.ganZhi.gan)} ${tZhi(d.ganZhi.zhi)}`;
     out[`section_02.bazi.${i}.shishen`] = fmtShortShiShen(d.ganShiShen, d.zhiShiShen);
     out[`section_02.bazi.${i}.current_class`] = (d.startAge <= virtualAge && virtualAge <= d.endAge) ? "current" : "";
   }
@@ -235,7 +241,7 @@ function chartToFlat(chart, currentYear) {
 
   // ============ LIUNIAN 10 (current dayun) ============
   if (currentDayun) {
-    out["liunian_dayun_label"] = `${tGan(currentDayun.ganZhi.gan)}${tZhi(currentDayun.ganZhi.zhi)} ${currentDayun.startAge}-${currentDayun.endAge}`;
+    out["liunian_dayun_label"] = `${tGan(currentDayun.ganZhi.gan)} ${tZhi(currentDayun.ganZhi.zhi)} ${currentDayun.startAge}-${currentDayun.endAge}`;
   } else {
     out["liunian_dayun_label"] = "-";
   }
@@ -248,7 +254,7 @@ function chartToFlat(chart, currentYear) {
     }
     out[`liunian.${i}.year`] = ln.year;
     out[`liunian.${i}.age`] = ln.age;
-    out[`liunian.${i}.gz`] = tGan(ln.ganZhi.gan) + tZhi(ln.ganZhi.zhi);
+    out[`liunian.${i}.gz`] = `${tGan(ln.ganZhi.gan)} ${tZhi(ln.ganZhi.zhi)}`;
     out[`liunian.${i}.shishen`] = fmtShortShiShen(ln.ganShiShen, ln.zhiShiShen);
     out[`liunian.${i}.current_class`] = (ln.age === virtualAge) ? "current" : "";
   }

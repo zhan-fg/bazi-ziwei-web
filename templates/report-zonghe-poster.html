@@ -24,6 +24,11 @@
     --warn-bg: #faf1e2;
   }
   * { box-sizing: border-box; }
+  .report * {
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
   html, body {
     margin: 0; padding: 0;
     background: var(--paper);
@@ -70,8 +75,10 @@
     transform: rotate(-3deg);
   }
   .title-block h1 {
-    font-size: 36px; margin: 0 0 6px;
-    letter-spacing: 4px; font-weight: normal;
+    font-size: 32px; margin: 0 0 6px;
+    letter-spacing: 2px; font-weight: normal;
+    line-height: 1.15;
+    max-width: 660px;
   }
   .title-block .subtitle {
     font-size: 13px; color: var(--ink-soft);
@@ -126,7 +133,7 @@
   }
   .core-data {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 8px;
   }
   .data-card {
@@ -142,6 +149,7 @@
   }
   .data-card .label { font-size: 11px; color: var(--ink-soft); margin-bottom: 4px; }
   .data-card .value { font-size: 22px; color: var(--ink); margin: 4px 0; }
+  .data-card:first-child .value { font-size: 20px; line-height: 1.35; }
   .data-card .value-tiaohou { display: flex; gap: 6px; justify-content: center; }
   .data-card .value-tiaohou span {
     display: inline-block; padding: 2px 8px;
@@ -199,7 +207,7 @@
     padding: 12px 14px;
   }
   .axes-row {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
   }
   .axis-box {
     padding: 10px;
@@ -209,7 +217,7 @@
   .axis-box .label { font-size: 11px; color: var(--vermillion); margin-bottom: 4px; }
   .axis-box .text { font-size: 12px; color: var(--ink); line-height: 1.7; }
   .strengths-block {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
   }
   .strength-side, .weakness-side {
     background: var(--paper-card); border: 1px solid var(--line-soft);
@@ -234,7 +242,7 @@
   /* ============ ZIWEI + BAZI GRID ============ */
   .charts-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 14px;
     margin-bottom: 20px;
   }
@@ -265,6 +273,7 @@
     font-size: 10px;
     position: relative;
     display: flex; flex-direction: column;
+    overflow: hidden;
   }
   .palace.ming { box-shadow: inset 0 0 0 2px var(--vermillion); }
   .palace.ming .p-gong { color: var(--vermillion); }
@@ -280,11 +289,12 @@
     border-bottom: 1px dashed var(--line-soft);
     padding-bottom: 2px; margin-bottom: 3px;
     min-width: 0;
+    flex-wrap: wrap;
   }
   .palace .p-head .p-gong-wrap { display: flex; align-items: center; min-width: 0; }
-  .palace .p-dizhi { color: var(--ink-soft); flex-shrink: 0; }
+  .palace .p-dizhi { color: var(--ink-soft); flex-shrink: 0; font-size: 9px; }
   .palace .p-gong { font-weight: bold; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .palace .p-ganzhi { font-size: 8px; color: var(--ink-faint); flex-shrink: 0; }
+  .palace .p-ganzhi { font-size: 7.5px; color: var(--ink-faint); flex: 1 1 100%; line-height: 1.2; }
   .palace .main-star {
     font-size: 12px; font-weight: bold; line-height: 1.4;
   }
@@ -341,7 +351,7 @@
   .bazi-pan { background: var(--paper); border: 1px solid var(--line); }
   .bazi-body { padding: 12px; }
   .bazi-pillars {
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
     border: 1px solid var(--line-soft);
   }
   .b-col {
@@ -352,8 +362,8 @@
   .b-head { font-size: 10px; color: var(--ink-soft); }
   .b-shishen { font-size: 11px; color: var(--vermillion); margin: 2px 0; }
   .b-shishen.dayMaster { color: var(--ink); border: 1px solid var(--ink); padding: 0 4px; display: inline-block; }
-  .b-gan { font-size: 30px; font-weight: bold; line-height: 1.1; margin: 2px 0; }
-  .b-zhi { font-size: 24px; line-height: 1.1; margin: 2px 0; }
+  .b-gan { font-size: 24px; font-weight: bold; line-height: 1.1; margin: 2px 0; }
+  .b-zhi { font-size: 20px; line-height: 1.1; margin: 2px 0; }
   .b-canggan {
     font-size: 9px; color: var(--ink-soft);
     line-height: 1.5; min-height: 50px;
@@ -365,10 +375,11 @@
     margin-top: 4px; padding-top: 4px;
   }
   .b-extra-row {
-    display: flex; justify-content: space-between;
+    display: flex; justify-content: space-between; gap: 4px;
     font-size: 9px; color: var(--ink-soft);
     margin: 1px 0;
   }
+  .b-extra-row span:last-child { text-align: right; }
   .b-extra-row .ek { color: var(--ink-faint); }
 
   .dayun-strip, .liunian-strip {
@@ -382,7 +393,7 @@
     border-bottom: 1px solid var(--line-soft);
   }
   .strip-head .small { font-size: 9px; color: var(--ink-soft); margin-left: 6px; }
-  .strip-row { display: grid; grid-template-columns: repeat(10, 1fr); }
+  .strip-row { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); }
   .strip-cell {
     border-right: 1px solid var(--line-faint);
     padding: 4px 2px; text-align: center;
@@ -391,7 +402,7 @@
   .strip-cell:last-child { border-right: none; }
   .strip-cell.current { background: rgba(193,67,47,0.08); }
   .strip-cell.current .ages { color: var(--vermillion); font-weight: bold; }
-  .strip-cell .gz { font-size: 11px; font-weight: bold; color: var(--ink); }
+  .strip-cell .gz { font-size: 9.5px; font-weight: bold; color: var(--ink); line-height: 1.25; }
   .strip-cell .ages { color: var(--ink-soft); }
   .strip-cell .ss { font-size: 8px; color: var(--ink-faint); margin-top: 1px; }
   .strip-cell.current.dayun::after {
@@ -415,7 +426,7 @@
     padding: 2px 6px; border-radius: 2px;
     font-size: 11px; font-family: "JetBrains Mono", monospace;
   }
-  .row-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row-2col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
 
   /* 01 main axis conclusion */
   .axis-conclusion {
@@ -432,7 +443,7 @@
   .stage-legend .dot.flat { background: var(--azure); }
   .stage-legend .dot.down { background: var(--vermillion); }
   .stage-grid {
-    display: grid; grid-template-columns: 80px repeat(7, 1fr);
+    display: grid; grid-template-columns: 72px repeat(7, minmax(0, 1fr));
     border: 1px solid var(--line-soft); font-size: 10px;
   }
   .stage-grid > div { padding: 6px 4px; border-right: 1px solid var(--line-faint); text-align: center; }
@@ -448,8 +459,8 @@
 
   /* 03 cross check */
   .cross-grid {
-    display: grid; grid-template-columns: 80px repeat(6, 1fr);
-    border: 1px solid var(--line-soft); font-size: 10px;
+    display: grid; grid-template-columns: 70px repeat(6, minmax(0, 1fr));
+    border: 1px solid var(--line-soft); font-size: 9.5px;
   }
   .cross-grid > div { padding: 6px 5px; border-right: 1px solid var(--line-faint); border-bottom: 1px solid var(--line-faint); }
   .cross-grid > div:last-child { border-right: none; }
@@ -462,7 +473,7 @@
 
   /* 04 conflicts */
   .conflict-grid {
-    display: grid; grid-template-columns: 100px 1fr 1fr 60px 1fr;
+    display: grid; grid-template-columns: 82px minmax(0, 1fr) minmax(0, 1fr) 58px minmax(0, 1fr);
     border: 1px solid var(--line-soft); font-size: 10px;
   }
   .conflict-grid > div { padding: 6px 8px; border-right: 1px solid var(--line-faint); border-bottom: 1px solid var(--line-faint); }
@@ -478,7 +489,7 @@
 
   /* 05 final conclusion */
   .final-grid {
-    display: grid; grid-template-columns: 1fr 1.2fr 1fr 1fr 1fr;
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
   .final-block {
@@ -516,7 +527,7 @@
 
   /* 06 confidence */
   .confidence-row {
-    display: grid; grid-template-columns: repeat(4, 1fr) 1.5fr;
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.5fr);
     gap: 10px;
   }
   .conf-card {

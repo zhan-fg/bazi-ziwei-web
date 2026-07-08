@@ -30,7 +30,7 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 // split a 2-char ganzhi string (e.g. "癸丑") → "Gui Chou"
 function fmtGanZhi(s?: string) {
   if (!s || s.length < 2) return s || "";
-  return tGan(s[0]) + tZhi(s[1]);
+  return `${tGan(s[0])} ${tZhi(s[1])}`;
 }
 
 export default function ReadingPage() {
@@ -177,7 +177,7 @@ export default function ReadingPage() {
         <Card title="Current Luck Cycle">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-2xl font-bold text-amber-700">
-              {tGan(dayunCurrent.ganZhi.gan)}{tZhi(dayunCurrent.ganZhi.zhi)}
+              {tGan(dayunCurrent.ganZhi.gan)} {tZhi(dayunCurrent.ganZhi.zhi)}
             </span>
             <span className="text-stone-500 text-sm">
               {dayunCurrent.startYear}-{dayunCurrent.endYear} · {tShiShen(dayunCurrent.ganShiShen)}/{tShiShen(dayunCurrent.zhiShiShen)}
@@ -194,7 +194,7 @@ export default function ReadingPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {(zw?.gongs || []).map((g: any) => (
             <div key={g.gong} className="bg-stone-50 rounded-lg p-3 text-sm">
-              <div className="text-stone-400 text-xs mb-1">{tGan(g.tiangan)}{tZhi(g.dizhi)} · {tPalace(g.gong)}</div>
+              <div className="text-stone-400 text-xs mb-1">{tGan(g.tiangan)} {tZhi(g.dizhi)} · {tPalace(g.gong)}</div>
               <div className="font-medium text-stone-800">
                 {g.mainStars?.length > 0 ? g.mainStars.map(tStar).join(' · ') : 'No Major Star'}
               </div>
@@ -222,7 +222,7 @@ export default function ReadingPage() {
                 >
                   <div className="text-xs text-stone-400">{d.startAge}-{d.endAge || d.startAge + 9}yr</div>
                   <div className={`text-sm font-bold ${active ? 'text-amber-800' : 'text-stone-700'}`}>
-                    {tGan(d.ganZhi.gan)}{tZhi(d.ganZhi.zhi)}
+                    {tGan(d.ganZhi.gan)} {tZhi(d.ganZhi.zhi)}
                   </div>
                   <div className="text-xs text-stone-400">{tShiShen(d.ganShiShen)}/{tShiShen(d.zhiShiShen)}</div>
                 </div>

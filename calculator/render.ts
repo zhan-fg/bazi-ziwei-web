@@ -35,6 +35,12 @@ function pick(dict: any, term: string | undefined | null | any): string {
   const v = dict?.[String(term)];
   return v !== undefined ? v : String(term);
 }
+function bilingual(dict: any, term: string | undefined | null | any): string {
+  if (term === undefined || term === null || term === '') return '';
+  const raw = String(term);
+  const en = dict?.[raw];
+  return en !== undefined ? `${en} ${raw}` : raw;
+}
 const tStar = (s?: any) => pick(G.stars, s);
 const tPalace = (s?: any) => {
   if (!s) return '';
@@ -42,14 +48,14 @@ const tPalace = (s?: any) => {
   const base = String(s).endsWith('宫') ? String(s).slice(0, -1) : String(s);
   return G.palaces[base] ?? String(s);
 };
-const tGan = (s?: any) => pick(G.stems, s);
-const tZhi = (s?: any) => pick(G.branches, s);
+const tGan = (s?: any) => bilingual(G.stems, s);
+const tZhi = (s?: any) => bilingual(G.branches, s);
 const tGanZhi = (s?: any) => {
   if (!s) return '';
   const str = String(s);
-  if (str.length >= 2) return tGan(str[0]) + tZhi(str[1]);
-  if (G.stems[str]) return G.stems[str];
-  if (G.branches[str]) return G.branches[str];
+  if (str.length >= 2) return `${tGan(str[0])} ${tZhi(str[1])}`;
+  if (G.stems[str]) return tGan(str);
+  if (G.branches[str]) return tZhi(str);
   return str;
 };
 const tElement = (s?: any) => pick(G.elements, s);
@@ -158,7 +164,7 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
       ? g.auxStars.map((s: string) => fmtStarWithSihua(s, g.sihua)).join(' · ')
       : '—';
     const tiangan = g.tiangan || '';
-    const ganzhi = tiangan.length >= 2 ? tGanZhi(tiangan) : (tGan(tiangan) + tZhi(g.dizhi));
+    const ganzhi = tiangan.length >= 2 ? tGanZhi(tiangan) : `${tGan(tiangan)} ${tZhi(g.dizhi)}`;
     out[`gongs.${g.dizhi}.name`] = tPalace(g.gong);
     out[`gongs.${g.dizhi}.ganzhi`] = ganzhi;
     out[`gongs.${g.dizhi}.mainStarsHtml`] = mainStarsHtml;
@@ -206,7 +212,7 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
       ['gz','age_range','shishen','current_class'].forEach(f => out[`dayun.${i}.${f}`] = '-');
       continue;
     }
-    out[`dayun.${i}.gz`] = tGan(d.ganZhi.gan) + tZhi(d.ganZhi.zhi);
+    out[`dayun.${i}.gz`] = `${tGan(d.ganZhi.gan)} ${tZhi(d.ganZhi.zhi)}`;
     out[`dayun.${i}.age_range`] = `${d.startAge}-${d.endAge}`;
     out[`dayun.${i}.shishen`] = fmtShortShiShen(d.ganShiShen, d.zhiShiShen);
     out[`dayun.${i}.current_class`] = (currentDayun && d === currentDayun) ? 'current dayun' : '';
@@ -221,7 +227,7 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
       continue;
     }
     out[`section_02.bazi.${i}.range`] = `${d.startAge}-${d.endAge}`;
-    out[`section_02.bazi.${i}.gz`] = tGan(d.ganZhi.gan) + tZhi(d.ganZhi.zhi);
+    out[`section_02.bazi.${i}.gz`] = `${tGan(d.ganZhi.gan)} ${tZhi(d.ganZhi.zhi)}`;
     out[`section_02.bazi.${i}.shishen`] = fmtShortShiShen(d.ganShiShen, d.zhiShiShen);
     out[`section_02.bazi.${i}.current_class`] = (d.startAge <= virtualAge && virtualAge <= d.endAge) ? 'current' : '';
   }
@@ -243,7 +249,7 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
 
   // ============ LIUNIAN 10 (current dayun) ============
   if (currentDayun) {
-    out['liunian_dayun_label'] = `${tGan(currentDayun.ganZhi.gan)}${tZhi(currentDayun.ganZhi.zhi)} ${currentDayun.startAge}-${currentDayun.endAge}`;
+    out['liunian_dayun_label'] = `${tGan(currentDayun.ganZhi.gan)} ${tZhi(currentDayun.ganZhi.zhi)} ${currentDayun.startAge}-${currentDayun.endAge}`;
   } else {
     out['liunian_dayun_label'] = '-';
   }
@@ -256,7 +262,7 @@ function chartToFlat(chart: any, currentYear?: number): Record<string, any> {
     }
     out[`liunian.${i}.year`] = ln.year;
     out[`liunian.${i}.age`] = ln.age;
-    out[`liunian.${i}.gz`] = tGan(ln.ganZhi.gan) + tZhi(ln.ganZhi.zhi);
+    out[`liunian.${i}.gz`] = `${tGan(ln.ganZhi.gan)} ${tZhi(ln.ganZhi.zhi)}`;
     out[`liunian.${i}.shishen`] = fmtShortShiShen(ln.ganShiShen, ln.zhiShiShen);
     out[`liunian.${i}.current_class`] = (ln.age === virtualAge) ? 'current' : '';
   }
