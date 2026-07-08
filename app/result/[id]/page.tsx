@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { tGan, tZhi, tStar, tGeju, tGanElement } from "@/lib/glossary";
 
 export default function ResultPage() {
   const { id } = useParams<{ id: string }>();
@@ -15,13 +14,10 @@ export default function ResultPage() {
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState("");
   const [posterHTML, setPosterHTML] = useState("");
-  const [posterImg, setPosterImg] = useState("");
   const [analysis, setAnalysis] = useState("");
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [unlocked, setUnlocked] = useState(!!paid);
-  const posterContainerRef = useRef<HTMLDivElement>(null);
 
-  // Load chart data
   useEffect(() => {
     fetch(`/api/reading?id=${id}`)
       .then(async (res) => {
@@ -37,7 +33,6 @@ export default function ResultPage() {
       .catch((err) => { setError(err.message); setLoading(false); });
   }, [id]);
 
-  // Load poster HTML → render to image
   useEffect(() => {
     if (!data) return;
     fetch(`/api/poster-image?id=${id}`)
@@ -45,35 +40,6 @@ export default function ResultPage() {
       .catch(() => {});
   }, [data]);
 
-  // Convert poster HTML to image once loaded
-  useEffect(() => {
-    if (!posterHTML || !posterContainerRef.current || posterImg) return;
-    const el = posterContainerRef.current;
-    // Inject hidden iframe to render, then capture
-    const iframe = document.createElement("iframe");
-    iframe.style.cssText = "position:absolute;left:-9999px;width:1140px;border:none";
-    iframe.srcdoc = posterHTML;
-    document.body.appendChild(iframe);
-
-    iframe.onload = async () => {
-      try {
-        const html2canvas = (await import("html2canvas")).default;
-        const doc = iframe.contentDocument || iframe.contentWindow?.document;
-        if (!doc) return;
-        const canvas = await html2canvas(doc.body, {
-          scale: 2,
-          backgroundColor: "#ffffff",
-          width: 1140,
-          height: doc.body.scrollHeight || 1600,
-        });
-        setPosterImg(canvas.toDataURL("image/png"));
-      } finally {
-        document.body.removeChild(iframe);
-      }
-    };
-  }, [posterHTML, posterImg]);
-
-  // Auto-unlock if coming from Stripe
   useEffect(() => {
     if (paid && !analysis && !analysisLoading) {
       runAnalysis();
@@ -116,11 +82,13 @@ export default function ResultPage() {
   };
 
   const handleDownload = () => {
-    if (!posterImg) return;
+    if (!posterHTML) return;
+    const blob = new Blob([posterHTML], { type: "text/html" });
     const a = document.createElement("a");
-    a.download = `bazi-ziwei-chart-${id}.png`;
-    a.href = posterImg;
+    a.download = `bazi-ziwei-chart-${id}.html`;
+    a.href = URL.createObjectURL(blob);
     a.click();
+    URL.revokeObjectURL(a.href);
   };
 
   if (loading) return <LoadingSpinner message="Generating your chart..." />;
@@ -133,14 +101,10 @@ export default function ResultPage() {
     );
   }
 
-  const chart = data?.chart;
   const bi = data?.birthInfo;
-  const bz = chart?.bazi;
-  const zw = chart?.ziwei;
 
   return (
     <main className="flex-1 w-full">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-white sticky top-0 z-10">
         <Link href="/" className="text-amber-600 hover:text-amber-700 text-sm font-medium">
           ← New Reading
@@ -151,9 +115,9 @@ export default function ResultPage() {
         <div className="w-20" />
       </div>
 
-      {/* Poster image — zoomable on mobile */}
+      {/* Poster as HTML iframe */}
       <div className="relative bg-stone-100">
-        {posterImg && (
+        {posterHTML && (
           <button
             onClick={handleDownload}
             className="absolute top-3 right-3 z-10 bg-stone-800/80 hover:bg-stone-900 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition"
@@ -161,22 +125,13 @@ export default function ResultPage() {
             ↓ Save
           </button>
         )}
-        {/* Hidden div for html2canvas rendering */}
-        <div
-          ref={posterContainerRef}
-          className="absolute left-[-9999px] top-0 w-[1140px]"
-          dangerouslySetInnerHTML={{ __html: posterHTML }}
-        />
-
-        {posterImg ? (
-          <div className="overflow-auto touch-pan-x touch-pan-y" style={{ maxHeight: "calc(100vh - 120px)" }}>
-            <img
-              src={posterImg}
-              alt="Bazi & Ziwei Chart"
-              className="block mx-auto"
-              style={{ minWidth: "100%", maxWidth: "1140px" }}
-            />
-          </div>
+        {posterHTML ? (
+          <iframe
+            srcDoc={posterHTML}
+            className="w-full border-none"
+            style={{ height: "calc(100vh - 60px)", minHeight: "800px" }}
+            title="Bazi & Ziwei Chart"
+          />
         ) : (
           <div className="flex items-center justify-center py-20 text-stone-400">
             Loading poster...
@@ -220,27 +175,6 @@ export default function ResultPage() {
             {analysis}
           </div>
         ) : null}
-
-        {/* Quick facts */}
-        <div className="mt-8 grid grid-cols-2 gap-3">
-          {[
-            ["Day Master", `${tGan(bz?.dayMaster)} ${tGanElement(bz?.dayMaster) || 'Earth'}`],
-            ["Structure", tGeju(chart?.bazi?.enrichment?.['格局']?.primary) || '-'],
-            ["Self Palace", (zw?.gongs?.[0]?.mainStars || []).map(tStar).join(' · ') || '-'],
-            ["Current Cycle", (() => {
-              const d = (bz?.dayun || []).find((d: any) => {
-                const age = new Date().getFullYear() - bi.year + 1;
-                return d.startAge <= age && age <= (d.endAge || d.startAge + 9);
-              });
-              return d ? `${tGan(d.ganZhi.gan)} ${tZhi(d.ganZhi.zhi)}` : '-';
-            })()],
-          ].map(([label, val]) => (
-            <div key={label} className="bg-stone-50 rounded-lg p-3 text-center">
-              <div className="text-xs text-stone-400 mb-0.5">{label}</div>
-              <div className="text-sm font-semibold text-stone-800">{val}</div>
-            </div>
-          ))}
-        </div>
       </div>
 
       <p className="text-center text-xs text-stone-400 pb-8">
