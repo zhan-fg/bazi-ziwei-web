@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = request.nextUrl.origin;
-    const checkoutUrl = `https://app.gumroad.com/l/${productId}?wanted=true&url=${encodeURIComponent(`${origin}/result/${chartId}?paid=1`)}`;
+    const checkoutUrl = `https://app.gumroad.com/l/${productId}?wanted=true`;
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (err: any) {

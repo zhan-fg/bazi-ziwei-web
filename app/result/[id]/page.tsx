@@ -69,11 +69,16 @@ export default function ResultPage() {
         body: JSON.stringify({ chartId: id }),
       });
       const d = await res.json();
-      if (d.url) window.location.href = d.url;
+      if (d.url) window.open(d.url, "_blank");
       else throw new Error(d.error || "Payment failed");
     } catch (err: any) {
       alert(err.message);
     }
+  };
+
+  const handleManualUnlock = () => {
+    setUnlocked(true);
+    if (!analysis && !analysisLoading) runAnalysis();
   };
 
   const handleDownload = () => {
@@ -145,8 +150,16 @@ export default function ResultPage() {
               Unlock Professional Analysis · $1.99
             </button>
             <p className="text-xs text-stone-400">
-              Secure payment via Gumroad · You will be redirected
+              Opens in new tab · Pay securely via Gumroad
             </p>
+            <div className="pt-2 border-t border-stone-100">
+              <button
+                onClick={handleManualUnlock}
+                className="text-amber-600 hover:text-amber-700 text-sm underline font-medium"
+              >
+                I've paid — unlock now
+              </button>
+            </div>
           </div>
         ) : analysisLoading ? (
           <div className="flex items-center gap-3 text-stone-500 py-12 justify-center">
