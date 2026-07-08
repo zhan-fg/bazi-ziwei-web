@@ -1,12 +1,12 @@
-// LLM client — supports OpenAI-compatible APIs (OpenAI, Anthropic, etc.)
+// DeepSeek API client for Bazi & Ziwei reading generation.
 // Configure via env vars:
-//   LLM_API_KEY  (required)
-//   LLM_API_BASE (default: https://api.openai.com/v1)
-//   LLM_MODEL    (default: gpt-4o)
+//   DEEPSEEK_API_KEY   (required)
+//   DEEPSEEK_BASE_URL  (default: https://api.deepseek.com/v1)
+//   DEEPSEEK_MODEL     (default: deepseek-chat)
 
-const API_KEY = process.env.LLM_API_KEY || '';
-const API_BASE = process.env.LLM_API_BASE || 'https://api.openai.com/v1';
-const MODEL = process.env.LLM_MODEL || 'gpt-4o';
+const API_KEY = process.env.DEEPSEEK_API_KEY || '';
+const API_BASE = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
+const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
 
 export function isLLMConfigured(): boolean {
   return !!API_KEY;
@@ -17,9 +17,9 @@ export async function generateAnalysis(
   userContent: string,
   options?: { maxTokens?: number }
 ): Promise<string> {
-  if (!API_KEY) throw new Error('LLM_API_KEY not configured');
+  if (!API_KEY) throw new Error('DEEPSEEK_API_KEY not configured');
 
-  const maxTokens = options?.maxTokens || 4096;
+  const maxTokens = options?.maxTokens || 8192;
 
   const res = await fetch(`${API_BASE}/chat/completions`, {
     method: 'POST',
@@ -40,7 +40,7 @@ export async function generateAnalysis(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`LLM API error (${res.status}): ${err.slice(0, 300)}`);
+    throw new Error(`DeepSeek API error (${res.status}): ${err.slice(0, 300)}`);
   }
 
   const json = await res.json();
@@ -53,9 +53,9 @@ export async function generateAnalysisStreaming(
   onChunk: (text: string) => void,
   options?: { maxTokens?: number }
 ): Promise<string> {
-  if (!API_KEY) throw new Error('LLM_API_KEY not configured');
+  if (!API_KEY) throw new Error('DEEPSEEK_API_KEY not configured');
 
-  const maxTokens = options?.maxTokens || 4096;
+  const maxTokens = options?.maxTokens || 8192;
 
   const res = await fetch(`${API_BASE}/chat/completions`, {
     method: 'POST',
@@ -77,7 +77,7 @@ export async function generateAnalysisStreaming(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`LLM API error (${res.status}): ${err.slice(0, 300)}`);
+    throw new Error(`DeepSeek API error (${res.status}): ${err.slice(0, 300)}`);
   }
 
   const reader = res.body?.getReader();
