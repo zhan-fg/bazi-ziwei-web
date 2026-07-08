@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getProductUrl } from '@/lib/gumroad';
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,21 +8,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing chartId' }, { status: 400 });
     }
 
-    const productUrl = process.env.GUMROAD_PRODUCT_URL;
-    if (!productUrl) {
-      return NextResponse.json({ error: 'GUMROAD_PRODUCT_URL not configured' }, { status: 503 });
-    }
-
     const origin = request.nextUrl.origin;
-    const returnUrl = `${origin}/result/${chartId}?paid=combined`;
+    const productUrl = getProductUrl();
 
-    // Gumroad respects ?wanted=true to skip the landing page
-    // We pass our return URL as a query param (Gumroad shows a back-link
-    // on the thank-you page, but we also have a manual "I've paid" button
-    // on the result page as fallback)
-    const checkoutUrl = `${productUrl}?wanted=true`;
+    // Redirect user to Gumroad, then Gumroad redirects back to our result page
+    const checkoutUrl = `${productUrl}?wanted=true&url=${encodeURIComponent(`${origin}/result/${chartId}?paid=1`)}`;
 
-    return NextResponse.json({ url: checkoutUrl, returnUrl });
+    return NextResponse.json({ url: checkoutUrl });
   } catch (err: any) {
     console.error('[checkout] error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
