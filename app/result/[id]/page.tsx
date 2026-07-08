@@ -49,14 +49,25 @@ export default function ResultPage() {
   const runAnalysis = async () => {
     setAnalysisLoading(true);
     setUnlocked(true);
+    // Step 1: fast chart-derived analysis (always works)
     try {
-      const res = await fetch(`/api/analysis-text?id=${id}`);
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Analysis failed");
-      setAnalysis(d.analysis);
+      const r1 = await fetch(`/api/analysis-text?id=${id}`);
+      const d1 = await r1.json();
+      if (r1.ok && d1.analysis) {
+        setAnalysis(d1.analysis);
+        setAnalysisLoading(false);
+        // Step 2: try LLM in background for richer content
+        fetch(`/api/analyze?id=${id}&type=combined`)
+          .then(async (r2) => {
+            if (r2.ok) {
+              const d2 = await r2.json();
+              if (d2.analysis) setAnalysis(d2.analysis);
+            }
+          })
+          .catch(() => {});
+      }
     } catch (err: any) {
       setAnalysis(`Error: ${err.message}`);
-    } finally {
       setAnalysisLoading(false);
     }
   };
