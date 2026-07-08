@@ -44,13 +44,50 @@ export async function POST(request: NextRequest) {
     }).eq("id", pendingRecord.id);
 
     // Verify user has unlocks
-    const { data: userRecord } = await supabaseAdmin
+    let { data: userRecord } = await supabaseAdmin
       .from(TABLES.users)
       .select("id, report_unlocks_remaining")
       .eq("email", normalizedEmail)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
+
+    // ── Fallback: check chinese-name processed_sales for this email ──
+    // If the webhook missed the bazi product (e.g. env var not set),
+    // the sale may still be recorded in the shared processed_sales table.
+    if (!userRecord || (userRecord.report_unlocks_remaining || 0) <= 0) {
+      const { data: saleRecord } = await supabaseAdmin
+        .from("processed_sales")
+        .select("id")
+        .eq("email", normalizedEmail)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (saleRecord) {
+        // Sale exists in chinese-name's table — grant the unlock
+        if (userRecord) {
+          await supabaseAdmin.from(TABLES.users)
+            .update({
+              report_unlocks_remaining: (userRecord.report_unlocks_remaining || 0) + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userRecord.id);
+        } else {
+          const { data: newUser } = await supabaseAdmin.from(TABLES.users)
+            .insert({
+              anonymous_id: `recovery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              email: normalizedEmail,
+              free_uses_remaining: 0,
+              report_unlocks_remaining: 1,
+              subscription_status: "none",
+            })
+            .select("id, report_unlocks_remaining")
+            .single();
+          userRecord = newUser;
+        }
+      }
+    }
 
     const reportUnlocks = userRecord?.report_unlocks_remaining || 0;
 
@@ -69,7 +106,7 @@ export async function POST(request: NextRequest) {
       })
       .eq("id", userRecord.id);
 
-    // Add chartId to unlocked_charts (userRecord is guaranteed non-null here)
+    // Add chartId to unlocked_charts
     const { data: existingUser } = await supabaseAdmin
       .from(TABLES.users)
       .select("id, unlocked_charts")
