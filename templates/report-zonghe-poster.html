@@ -262,17 +262,18 @@
   .ziwei-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(4, 1fr);
-    height: 700px;
+    grid-template-rows: repeat(4, auto);
+    min-height: 600px;
     background: var(--line-soft);
     gap: 1px;
   }
   .palace {
     background: var(--paper);
-    padding: 6px 8px;
+    padding: 8px 10px;
     font-size: 11px;
     position: relative;
     display: flex; flex-direction: column;
+    min-height: 150px;
   }
   .palace.ming { box-shadow: inset 0 0 0 2px var(--vermillion); }
   .palace.ming .p-gong { color: var(--vermillion); }
@@ -289,11 +290,11 @@
     min-width: 0;
   }
   .palace .p-head .p-gong-wrap { display: flex; align-items: center; min-width: 0; }
-  .palace .p-dizhi { color: var(--ink-soft); flex-shrink: 0; font-size: 10px; }
-  .palace .p-gong { font-weight: bold; font-size: 11px; }
-  .palace .p-ganzhi { font-size: 9px; color: var(--ink-faint); flex-shrink: 0; }
+  .palace .p-dizhi { color: var(--ink-soft); flex-shrink: 0; font-size: 9px; }
+  .palace .p-gong { font-weight: bold; font-size: 10px; }
+  .palace .p-ganzhi { font-size: 8px; color: var(--ink-faint); flex-shrink: 0; }
   .palace .main-star {
-    font-size: 13px; font-weight: bold; line-height: 1.4;
+    font-size: 12px; font-weight: bold; line-height: 1.3;
   }
   .palace .main-star .state {
     font-size: 9px; color: var(--ink-soft); margin-left: 2px;
@@ -359,8 +360,8 @@
   .b-head { font-size: 10px; color: var(--ink-soft); }
   .b-shishen { font-size: 11px; color: var(--vermillion); margin: 2px 0; }
   .b-shishen.dayMaster { color: var(--ink); border: 1px solid var(--ink); padding: 0 4px; display: inline-block; }
-  .b-gan { font-size: 22px; font-weight: bold; line-height: 1.2; margin: 2px 0; }
-  .b-zhi { font-size: 18px; line-height: 1.2; margin: 2px 0; }
+  .b-gan { font-size: 20px; font-weight: bold; line-height: 1.2; margin: 2px 0; }
+  .b-zhi { font-size: 16px; line-height: 1.2; margin: 2px 0; }
   .b-canggan {
     font-size: 9px; color: var(--ink-soft);
     line-height: 1.5; min-height: 45px;
