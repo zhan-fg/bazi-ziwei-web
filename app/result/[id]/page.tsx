@@ -50,7 +50,7 @@ export default function ResultPage() {
     setAnalysisLoading(true);
     setUnlocked(true);
     try {
-      const res = await fetch(`/api/analyze?id=${id}&type=combined`);
+      const res = await fetch(`/api/analysis-text?id=${id}`);
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Analysis failed");
       setAnalysis(d.analysis);

@@ -175,3 +175,56 @@ export function generateAnalysis(chart: any, birthInfo: any): any {
     },
   };
 }
+
+/** Generate a readable English analysis text from chart data (no LLM). */
+export function generateAnalysisText(chart: any, birthInfo: any): string {
+  const a = generateAnalysis(chart, birthInfo);
+  const bz = chart.bazi;
+  const zw = chart.ziwei;
+  const en = bz.enrichment;
+
+  return [
+    `## Your Destiny Analysis`,
+    ``,
+    `**Chart Structure**: ${a.meta.archetype_name}`,
+    `**Life Theme**: ${a.meta.axis_oneliner}`,
+    ``,
+    `### Core Profile`,
+    `- Bazi: ${en?.['格局']?.primary || '—'} with Day Master ${bz.dayMaster}`,
+    `- Ziwei: Life Palace in ${zw.gongs[0].dizhi} with ${(zw.gongs[0].mainStars || []).join(' · ')}`,
+    `- Current cycle: ${(bz.dayun || []).find((d:any) => {
+      const age = new Date().getFullYear() - birthInfo.year + 1;
+      return d.startAge <= age && age <= d.endAge;
+    })?.ganZhi?.gan || '—'}${(bz.dayun || []).find((d:any) => {
+      const age = new Date().getFullYear() - birthInfo.year + 1;
+      return d.startAge <= age && age <= d.endAge;
+    })?.ganZhi?.zhi || ''}`,
+    ``,
+    `### Career & Wealth`,
+    `${a.dim.career.fused}`,
+    `${a.dim.wealth.fused}`,
+    ``,
+    `### Relationships & Family`,
+    `${a.dim.marriage.fused}`,
+    `${a.dim.children.fused}`,
+    `${a.dim.family.fused}`,
+    ``,
+    `### Health`,
+    `${a.dim.health.fused}`,
+    ``,
+    `### Key Strengths`,
+    ...a.strengths.map((s: any) => `- **${s.title}**: ${s.desc}`),
+    ``,
+    `### Areas to Watch`,
+    ...a.weaknesses.map((w: any) => `- **${w.title}**: ${w.desc}`),
+    ``,
+    `### Life Milestones`,
+    ...a.final.nodes.map((n: any) => `- Age ${n.age} (${n.year}): ${n.event}`),
+    ``,
+    `### Guidance`,
+    ...a.final.advice.map((adv: string) => `- ${adv}`),
+    ``,
+    `---`,
+    `*Generated algorithmically from your Bazi and Ziwei chart data. For entertainment purposes only.*`,
+  ].join('\n');
+}
