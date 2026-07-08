@@ -31,13 +31,13 @@ export const tPalace = (s?: string | null) => {
 export const tPalaceBody = (s?: string | null) => pick(G.palaceBodies as Dict, s);
 export const tGan = (s?: string | null) => {
   if (!s) return "";
-  const en = G.stems[s];
+  const en = (G.stems as Dict)[s];
   return en ? `${en} ${s}` : s;
 };
 export const tGanElement = (s?: string | null) => pick(G.stemElements as Dict, s);
 export const tZhi = (s?: string | null) => {
   if (!s) return "";
-  const en = G.branches[s];
+  const en = (G.branches as Dict)[s];
   return en ? `${en} ${s}` : s;
 };
 // Translate a 2-char stem-branch string (e.g. "癸丑" → "Gui 癸 Chou 丑").
