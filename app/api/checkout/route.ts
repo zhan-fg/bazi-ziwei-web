@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getProductUrl } from '@/lib/gumroad';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,11 +7,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing chartId' }, { status: 400 });
     }
 
-    const origin = request.nextUrl.origin;
-    const productUrl = getProductUrl();
+    const productId = process.env.GUMROAD_PRODUCT_ID;
+    if (!productId) {
+      return NextResponse.json({ error: 'GUMROAD_PRODUCT_ID not configured' }, { status: 503 });
+    }
 
-    // Redirect user to Gumroad, then Gumroad redirects back to our result page
-    const checkoutUrl = `${productUrl}?wanted=true&url=${encodeURIComponent(`${origin}/result/${chartId}?paid=1`)}`;
+    const origin = request.nextUrl.origin;
+    const checkoutUrl = `https://app.gumroad.com/l/${productId}?wanted=true&url=${encodeURIComponent(`${origin}/result/${chartId}?paid=1`)}`;
 
     return NextResponse.json({ url: checkoutUrl });
   } catch (err: any) {
