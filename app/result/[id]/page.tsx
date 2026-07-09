@@ -20,14 +20,18 @@ export default function ResultPage() {
   const [error, setError] = useState("");
   const [posterHTML, setPosterHTML] = useState("");
 
-  // Payment flow state
-  const [phase, setPhase] = useState<"init" | "manual" | "claiming" | "unlocked" | "generating" | "done">(
+  // Payment flow
+  const [phase, setPhase] = useState<"init" | "manual" | "polling" | "unlocked" | "generating" | "done">(
     "init"
   );
   const [email, setEmail] = useState("");
   const [claimError, setClaimError] = useState("");
   const [analysis, setAnalysis] = useState("");
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"" | "chart" | "reading">("");
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
+  const MAX_POLLS = 30; // 30 × 3s = 90s
 
   // Refs
   const posterFrameRef = useRef<HTMLIFrameElement>(null);
@@ -65,11 +69,16 @@ export default function ResultPage() {
     if (!id) return;
     try {
       const unlocked = JSON.parse(localStorage.getItem("bazi-unlocked") || "[]");
-      if (unlocked.includes(id)) {
-        setPhase("unlocked");
-      }
+      if (unlocked.includes(id)) setPhase("unlocked");
     } catch {}
   }, [id]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
 
   // ─── Payment flow ───────────────────────────────────────
 
@@ -80,42 +89,62 @@ export default function ResultPage() {
     setPhase("manual");
   };
 
-  const handleManualClaim = async () => {
-    if (!email.trim() || !email.includes("@")) {
+  const verifyPurchase = async (emailToCheck: string) => {
+    const res = await fetch("/api/verify-purchase", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: emailToCheck, chartId: id }),
+    });
+    return await res.json();
+  };
+
+  const startPolling = async () => {
+    const emailToCheck = email.trim();
+    if (!emailToCheck || !emailToCheck.includes("@")) {
       setClaimError("Please enter a valid email address");
       return;
     }
 
-    setPhase("claiming");
+    setPhase("polling");
     setClaimError("");
+    pollCountRef.current = 0;
 
-    try {
-      const res = await fetch("/api/verify-purchase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), chartId: id }),
-      });
+    // Clear any existing poll
+    if (pollRef.current) clearInterval(pollRef.current);
 
-      const d = await res.json();
+    const poll = async () => {
+      pollCountRef.current++;
+      try {
+        const d = await verifyPurchase(emailToCheck);
+        if (d.verified) {
+          if (pollRef.current) clearInterval(pollRef.current);
+          saveUnlock();
+          onUnlocked(emailToCheck);
+          return;
+        }
+      } catch {}
 
-      if (res.ok && d.verified) {
-        try {
-          const unlocked = JSON.parse(localStorage.getItem("bazi-unlocked") || "[]");
-          if (!unlocked.includes(id)) {
-            unlocked.push(id);
-            localStorage.setItem("bazi-unlocked", JSON.stringify(unlocked));
-          }
-        } catch {}
-
-        onUnlocked(email.trim());
-      } else {
-        setClaimError(d.error || "No purchase found. Use the same email as your Gumroad purchase.");
+      if (pollCountRef.current >= MAX_POLLS) {
+        if (pollRef.current) clearInterval(pollRef.current);
+        setClaimError("Purchase not detected yet. Make sure you completed payment with this email, or try again.");
         setPhase("manual");
       }
-    } catch {
-      setClaimError("Network error. Please try again.");
-      setPhase("manual");
-    }
+    };
+
+    // First check immediately
+    poll();
+    // Then poll every 3 seconds
+    pollRef.current = setInterval(poll, 3000);
+  };
+
+  const saveUnlock = () => {
+    try {
+      const unlocked = JSON.parse(localStorage.getItem("bazi-unlocked") || "[]");
+      if (!unlocked.includes(id)) {
+        unlocked.push(id);
+        localStorage.setItem("bazi-unlocked", JSON.stringify(unlocked));
+      }
+    } catch {}
   };
 
   // ─── After unlock: generate reading ─────────────────────
@@ -154,62 +183,63 @@ export default function ResultPage() {
     }
   };
 
-  // ─── Export as two images ───────────────────────────────
+  // ─── Export ─────────────────────────────────────────────
 
-  const handleExport = async () => {
-    setExporting(true);
+  const exportChart = async () => {
+    setExporting("chart");
     try {
       const html2canvas = (await import("html2canvas")).default;
-
-      // 1. Export chart from iframe contentDocument
       const frame = posterFrameRef.current;
-      if (frame?.contentDocument?.body) {
-        const body = frame.contentDocument.body;
-        const chartCanvas = await html2canvas(body, {
-          backgroundColor: "#f5f1e8",
-          scale: 2,
-          width: body.scrollWidth,
-          height: body.scrollHeight,
-        });
-        const chartBlob = await new Promise<Blob>((resolve) =>
-          chartCanvas.toBlob((b) => resolve(b!), "image/png")
-        );
-        const chartUrl = URL.createObjectURL(chartBlob);
-        const a1 = document.createElement("a");
-        a1.download = `bazi-chart-${id}.png`;
-        a1.href = chartUrl;
-        document.body.appendChild(a1);
-        a1.click();
-        document.body.removeChild(a1);
-        setTimeout(() => URL.revokeObjectURL(chartUrl), 1000);
-      }
+      if (!frame?.contentDocument?.body) return;
 
-      // Small delay so browser doesn't block the second download
-      await new Promise((r) => setTimeout(r, 300));
-
-      // 2. Export reading
-      if (readingRef.current) {
-        const readingCanvas = await html2canvas(readingRef.current, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-        });
-        const readingBlob = await new Promise<Blob>((resolve) =>
-          readingCanvas.toBlob((b) => resolve(b!), "image/png")
-        );
-        const readingUrl = URL.createObjectURL(readingBlob);
-        const a2 = document.createElement("a");
-        a2.download = `bazi-reading-${id}.png`;
-        a2.href = readingUrl;
-        document.body.appendChild(a2);
-        a2.click();
-        document.body.removeChild(a2);
-        setTimeout(() => URL.revokeObjectURL(readingUrl), 1000);
-      }
+      const body = frame.contentDocument.body;
+      const canvas = await html2canvas(body, {
+        backgroundColor: "#f5f1e8",
+        scale: 2,
+        width: body.scrollWidth,
+        height: body.scrollHeight,
+      });
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png")
+      );
+      downloadBlob(blob, `bazi-chart-${id}.png`);
     } catch (err) {
-      console.error("Export failed:", err);
+      console.error("Export chart failed:", err);
     } finally {
-      setExporting(false);
+      setExporting("");
     }
+  };
+
+  const exportReading = async () => {
+    setExporting("reading");
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      if (!readingRef.current) return;
+
+      const canvas = await html2canvas(readingRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+      });
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png")
+      );
+      downloadBlob(blob, `bazi-reading-${id}.png`);
+    } catch (err) {
+      console.error("Export reading failed:", err);
+    } finally {
+      setExporting("");
+    }
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.download = filename;
+    a.href = url;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   // ─── Render ─────────────────────────────────────────────
@@ -235,15 +265,24 @@ export default function ResultPage() {
           {bi?.gender === 'male' ? 'Male' : 'Female'} · {bi?.year}-{String(bi?.month).padStart(2, '0')}-{String(bi?.day).padStart(2, '0')}
         </div>
         {phase === "done" ? (
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full transition disabled:opacity-50 shrink-0"
-          >
-            {exporting ? "..." : "Export"}
-          </button>
+          <div className="flex gap-1.5 shrink-0">
+            <button
+              onClick={exportChart}
+              disabled={exporting !== ""}
+              className="text-xs bg-stone-700 hover:bg-stone-800 text-white px-2.5 py-1.5 rounded-full transition disabled:opacity-50"
+            >
+              {exporting === "chart" ? "..." : "Chart"}
+            </button>
+            <button
+              onClick={exportReading}
+              disabled={exporting !== ""}
+              className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1.5 rounded-full transition disabled:opacity-50"
+            >
+              {exporting === "reading" ? "..." : "Reading"}
+            </button>
+          </div>
         ) : (
-          <div className="w-14 shrink-0" />
+          <div className="w-20 shrink-0" />
         )}
       </div>
 
@@ -278,11 +317,11 @@ export default function ResultPage() {
       {/* Reading section */}
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Email input */}
-        {(phase === "manual" || phase === "claiming") && (
+        {(phase === "manual") && (
           <div className="text-center space-y-4">
             <h2 className="text-lg font-semibold text-stone-800">Unlock Your Reading</h2>
             <p className="text-stone-500 text-sm">
-              Enter the email you used on Gumroad to verify your purchase
+              Enter the email you used on Gumroad — we'll verify your purchase automatically
             </p>
             {claimError && (
               <p className="text-red-500 text-sm bg-red-50 py-2 px-4 rounded-lg">{claimError}</p>
@@ -292,20 +331,45 @@ export default function ResultPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleManualClaim()}
+                onKeyDown={(e) => e.key === "Enter" && startPolling()}
                 placeholder="you@email.com"
-                disabled={phase === "claiming"}
-                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 autoFocus
               />
               <button
-                onClick={handleManualClaim}
-                disabled={phase === "claiming" || !email.trim()}
+                onClick={startPolling}
+                disabled={!email.trim()}
                 className="px-6 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition"
               >
-                {phase === "claiming" ? "..." : "Unlock"}
+                Verify
               </button>
             </div>
+            <p className="text-xs text-stone-400">
+              Complete your purchase on Gumroad first, then come back here
+            </p>
+          </div>
+        )}
+
+        {/* Polling state */}
+        {phase === "polling" && (
+          <div className="text-center py-12 space-y-3">
+            <svg className="animate-spin h-8 w-8 text-amber-600 mx-auto" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <p className="text-stone-700 font-medium">Checking for your purchase...</p>
+            <p className="text-stone-400 text-sm">
+              This may take up to 90 seconds after completing payment on Gumroad
+            </p>
+            <button
+              onClick={() => {
+                if (pollRef.current) clearInterval(pollRef.current);
+                setPhase("manual");
+              }}
+              className="text-amber-600 hover:text-amber-700 text-sm underline mt-4"
+            >
+              Cancel
+            </button>
           </div>
         )}
 
