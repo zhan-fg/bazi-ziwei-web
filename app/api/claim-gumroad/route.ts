@@ -52,9 +52,9 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    // ── Fallback: check chinese-name processed_sales for this email ──
+    // ── Fallback 1: check shared processed_sales (chinese-name table) ──
     // If the webhook missed the bazi product (e.g. env var not set),
-    // the sale may still be recorded in the shared processed_sales table.
+    // the sale is recorded in the shared processed_sales table.
     if (!userRecord || (userRecord.report_unlocks_remaining || 0) <= 0) {
       const { data: saleRecord } = await supabaseAdmin
         .from("processed_sales")
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (saleRecord) {
-        // Sale exists in chinese-name's table — grant the unlock
+        console.log(`claim-gumroad: found purchase in processed_sales for ${normalizedEmail}`);
         if (userRecord) {
           await supabaseAdmin.from(TABLES.users)
             .update({
@@ -77,6 +77,43 @@ export async function POST(request: NextRequest) {
           const { data: newUser } = await supabaseAdmin.from(TABLES.users)
             .insert({
               anonymous_id: `recovery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+              email: normalizedEmail,
+              free_uses_remaining: 0,
+              report_unlocks_remaining: 1,
+              subscription_status: "none",
+            })
+            .select("id, report_unlocks_remaining")
+            .single();
+          userRecord = newUser;
+        }
+      }
+    }
+
+    // ── Fallback 2: check bazi_processed_sales (own table) ──
+    // If handleBaziPurchase ran but bazi_users write failed for any reason,
+    // the sale is still recorded in bazi_processed_sales.
+    if (!userRecord || (userRecord.report_unlocks_remaining || 0) <= 0) {
+      const { data: baziSaleRecord } = await supabaseAdmin
+        .from(TABLES.processedSales)
+        .select("id")
+        .eq("email", normalizedEmail)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (baziSaleRecord) {
+        console.log(`claim-gumroad: found purchase in bazi_processed_sales for ${normalizedEmail}`);
+        if (userRecord) {
+          await supabaseAdmin.from(TABLES.users)
+            .update({
+              report_unlocks_remaining: (userRecord.report_unlocks_remaining || 0) + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userRecord.id);
+        } else {
+          const { data: newUser } = await supabaseAdmin.from(TABLES.users)
+            .insert({
+              anonymous_id: `bazi-recovery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
               email: normalizedEmail,
               free_uses_remaining: 0,
               report_unlocks_remaining: 1,
