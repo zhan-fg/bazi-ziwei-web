@@ -36,13 +36,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to generate token" }, { status: 500 });
     }
 
-    // Also write to shared claim_tokens so the Gumroad webhook can find it
-    // The webhook does: UPDATE claim_tokens SET status='verified', email=... WHERE token=...
+    // Also write to shared claim_tokens so the Gumroad webhook can find it.
+    // Only set fields that match the chinese-name schema: token, status, chart_id.
     const { error: sharedErr } = await db.from("claim_tokens").insert({
       token,
       chart_id: chartId,
       status: "pending",
-      expires_at: expiresAt,
     });
 
     if (sharedErr) {
