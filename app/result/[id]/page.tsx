@@ -24,7 +24,7 @@ export default function ResultPage() {
   const [analysis, setAnalysis] = useState("");
   const [analysisSource, setAnalysisSource] = useState("");
   const pollCount = useRef(0);
-  const pollTimer = useRef<NodeJS.Timeout | null>(null);
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const maxPolls = 30; // 30 × 2s = 60s
 
   // Load chart data
@@ -198,7 +198,7 @@ export default function ResultPage() {
   const onUnlocked = useCallback((userEmail: string) => {
     setPhase("generating");
     generateReading(userEmail);
-  }, [id]);
+  }, [id, email]);
 
   const generateReading = async (userEmail: string) => {
     try {

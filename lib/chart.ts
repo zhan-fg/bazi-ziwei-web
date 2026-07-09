@@ -101,8 +101,12 @@ export function runChart(birthInfo: {
   // Step 2: dump-text — write chart to /tmp, pass absolute path
   const tmpJson = path.join(TMP, `.chart-${Date.now()}.json`);
   fs.writeFileSync(tmpJson, JSON.stringify(chart), 'utf-8');
-  const text = execCalc(`dist/dump-text.js --input=${tmpJson}`);
-  fs.unlinkSync(tmpJson);
+  let text: string;
+  try {
+    text = execCalc(`dist/dump-text.js --input=${tmpJson}`);
+  } finally {
+    try { fs.unlinkSync(tmpJson); } catch {}
+  }
 
   return { json: chart, text };
 }
@@ -118,12 +122,15 @@ export function renderPosterHTML(
   fs.writeFileSync(tmpChart, JSON.stringify(chartJson), 'utf-8');
   fs.writeFileSync(tmpAnalysis, JSON.stringify(analysisJson), 'utf-8');
 
-  const html = execCalc(
-    `dist/render.js --chart=${tmpChart} --analysis=${tmpAnalysis} --template=${TEMPLATE_PATH} --currentYear=${currentYear}`
-  );
-
-  fs.unlinkSync(tmpChart);
-  fs.unlinkSync(tmpAnalysis);
+  let html: string;
+  try {
+    html = execCalc(
+      `dist/render.js --chart=${tmpChart} --analysis=${tmpAnalysis} --template=${TEMPLATE_PATH} --currentYear=${currentYear}`
+    );
+  } finally {
+    try { fs.unlinkSync(tmpChart); } catch {}
+    try { fs.unlinkSync(tmpAnalysis); } catch {}
+  }
 
   const htmlStart = html.indexOf('<!DOCTYPE');
   return htmlStart >= 0 ? html.slice(htmlStart) : html;

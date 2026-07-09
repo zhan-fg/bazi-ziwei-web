@@ -1,10 +1,11 @@
-import satori from 'satori';
-import { Resvg } from '@resvg/resvg-js';
 import fs from 'fs';
 import path from 'path';
 
 async function loadFont(name: string, file: string): Promise<{ name: string; data: Buffer; style: string }> {
   const fontPath = path.join(process.cwd(), 'fonts', file);
+  if (!fs.existsSync(fontPath)) {
+    throw new Error(`Font not found: ${fontPath}`);
+  }
   return {
     name,
     data: fs.readFileSync(fontPath),

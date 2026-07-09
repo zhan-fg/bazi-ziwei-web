@@ -3,7 +3,12 @@ import fs from 'fs';
 import path from 'path';
 
 // GET /api/debug — returns env + file state for troubleshooting
+// Only available when DEBUG env var is set
 export async function GET() {
+  if (process.env.DEBUG !== '1') {
+    return NextResponse.json({ error: 'Not available' }, { status: 403 });
+  }
+
   const cwd = process.cwd();
   const info: any = {
     cwd,

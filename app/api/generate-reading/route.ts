@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin, TABLES } from "@/lib/supabase";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
 import { getChart } from "@/lib/storage";
 import { generateAnalysis, isLLMConfigured } from "@/lib/llm";
 import fs from "fs";
@@ -20,8 +20,10 @@ export async function POST(request: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
+    const db = requireSupabaseAdmin();
+
     // Verify user has unlocked this chart
-    const { data: user } = await supabaseAdmin
+    const { data: user } = await db
       .from(TABLES.users)
       .select("id, unlocked_charts, report_unlocks_remaining")
       .eq("email", normalizedEmail)
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!data) return NextResponse.json({ error: "Chart data not found" }, { status: 404 });
 
     // Check cache
-    const { data: cached } = await supabaseAdmin
+    const { data: cached } = await db
       .from(TABLES.chartCache)
       .select("analysis_text")
       .eq("chart_id", chartId)
@@ -65,13 +67,13 @@ export async function POST(request: NextRequest) {
     if (fs.existsSync(promptPath)) {
       systemPrompt = fs.readFileSync(promptPath, "utf-8");
     } else {
-      systemPrompt = `You are a master of Chinese astrology — BaZi and Zi Wei Dou Shu. Analyze this chart and produce a comprehensive reading with sections: Overview, Career & Wealth, Relationships, Health, Life Cycles, and Guidance. Write warmly and authoritatively.`;
+      systemPrompt = `You are a master of Chinese astrology 鈥?BaZi and Zi Wei Dou Shu. Analyze this chart and produce a comprehensive reading with sections: Overview, Career & Wealth, Relationships, Health, Life Cycles, and Guidance. Write warmly and authoritatively.`;
     }
 
     const analysis = await generateAnalysis(systemPrompt, data.chartText, { maxTokens: 8192 });
 
     // Cache
-    await supabaseAdmin.from(TABLES.chartCache).upsert(
+    await db.from(TABLES.chartCache).upsert(
       { chart_id: chartId, analysis_text: analysis, created_at: new Date().toISOString() },
       { onConflict: "chart_id" }
     );
@@ -82,3 +84,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed" }, { status: 500 });
   }
 }
+

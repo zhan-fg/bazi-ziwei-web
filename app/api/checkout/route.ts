@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'GUMROAD_PRODUCT_ID not configured' }, { status: 503 });
     }
 
-    const origin = request.nextUrl.origin;
     const checkoutUrl = `https://app.gumroad.com/l/${productId}?wanted=true`;
 
     return NextResponse.json({ url: checkoutUrl });

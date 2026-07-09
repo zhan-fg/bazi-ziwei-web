@@ -36,8 +36,12 @@ export function cleanupOldFiles(maxAgeMs: number = 7 * 24 * 60 * 60 * 1000): voi
   const now = Date.now();
   for (const file of fs.readdirSync(DATA_DIR)) {
     const filePath = path.join(DATA_DIR, file);
-    if (now - fs.statSync(filePath).mtimeMs > maxAgeMs) {
-      fs.unlinkSync(filePath);
+    try {
+      if (now - fs.statSync(filePath).mtimeMs > maxAgeMs) {
+        fs.unlinkSync(filePath);
+      }
+    } catch {
+      // file may have been deleted concurrently — skip
     }
   }
 }

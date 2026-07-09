@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin, TABLES } from "@/lib/supabase";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
 
 /**
  * GET /api/claim-status?token=xxx
@@ -9,10 +9,11 @@ import { supabaseAdmin, TABLES } from "@/lib/supabase";
  */
 export async function GET(request: NextRequest) {
   try {
+    const db = requireSupabaseAdmin();
     const token = request.nextUrl.searchParams.get("token");
     if (!token) return NextResponse.json({ status: "invalid" }, { status: 400 });
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await db
       .from(TABLES.claimTokens)
       .select("status, email, chart_id")
       .eq("token", token)
@@ -32,3 +33,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: "error" }, { status: 500 });
   }
 }
+

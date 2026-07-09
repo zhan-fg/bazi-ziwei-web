@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin, TABLES } from "@/lib/supabase";
+﻿import { NextRequest, NextResponse } from "next/server";
+import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * POST /api/gumroad-webhook
@@ -8,16 +9,17 @@ import { supabaseAdmin, TABLES } from "@/lib/supabase";
  *
  * NOTE: If you share a Gumroad account with chinese-name-website,
  * the Ping URL must point to ONE project. The recommended setup is:
- *   - Primary Ping URL → newchinesename.com/api/gumroad-webhook
+ *   - Primary Ping URL 鈫?newchinesename.com/api/gumroad-webhook
  *   - That webhook detects bazi products by permalink and writes to bazi_* tables
  *   - This endpoint serves as a fallback / can be used with a separate Gumroad account
  *
  * Product mapping (set your Gumroad product permalink):
- *   $4.99 — 1 chart unlock
- *   $9.99 — 10 chart unlocks
+ *   $4.99 鈥?1 chart unlock
+ *   $9.99 鈥?10 chart unlocks
  */
 export async function POST(request: NextRequest) {
   try {
+    const db = requireSupabaseAdmin();
     const contentType = request.headers.get("content-type") || "";
     let body: Record<string, string> = {};
 
@@ -57,7 +59,7 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase().trim();
 
     // Idempotency check
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await db
       .from(TABLES.processedSales)
       .select("id")
       .eq("sale_id", saleId)
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // Determine unlocks based on price / permalink
     let reportUnlocks = 0;
-    // pyzrg = Bazi Reading ($4.99 → 1 unlock, $9.99 → 10 unlocks)
+    // pyzrg = Bazi Reading ($4.99 鈫?1 unlock, $9.99 鈫?10 unlocks)
     if (price === 499 || permalink === "pyzrg") {
       reportUnlocks = 1;
     } else if (price === 999) {
@@ -81,11 +83,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (reportUnlocks > 0) {
-      await addReportUnlocks(normalizedEmail, reportUnlocks);
+      await addReportUnlocks(db, normalizedEmail, reportUnlocks);
     }
 
     // Record processed sale
-    await supabaseAdmin.from(TABLES.processedSales).insert({
+    await db.from(TABLES.processedSales).insert({
       sale_id: saleId,
       email: normalizedEmail,
       product_permalink: permalink,
@@ -95,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Link claim_token
     if (claimToken) {
-      const { error: tokenErr } = await supabaseAdmin
+      const { error: tokenErr } = await db
         .from(TABLES.claimTokens)
         .update({ email: normalizedEmail, status: "verified" })
         .eq("token", claimToken)
@@ -109,12 +111,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("gumroad-webhook error:", error);
-    return NextResponse.json({ ok: false, error: "Internal error" }, { status: 200 });
+    return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }
 }
 
-async function addReportUnlocks(email: string, count: number) {
-  const { data: existing } = await supabaseAdmin
+async function addReportUnlocks(db: SupabaseClient, email: string, count: number) {
+  const { data: existing } = await db
     .from(TABLES.users)
     .select("id, report_unlocks_remaining")
     .eq("email", email)
@@ -123,7 +125,7 @@ async function addReportUnlocks(email: string, count: number) {
     .single();
 
   if (existing) {
-    await supabaseAdmin
+    await db
       .from(TABLES.users)
       .update({
         report_unlocks_remaining: (existing.report_unlocks_remaining || 0) + count,
@@ -131,7 +133,7 @@ async function addReportUnlocks(email: string, count: number) {
       })
       .eq("id", existing.id);
   } else {
-    await supabaseAdmin.from(TABLES.users).insert({
+    await db.from(TABLES.users).insert({
       anonymous_id: `gumroad-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       email,
       free_uses_remaining: 0,
@@ -140,3 +142,4 @@ async function addReportUnlocks(email: string, count: number) {
     });
   }
 }
+

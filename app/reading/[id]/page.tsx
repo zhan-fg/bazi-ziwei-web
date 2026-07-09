@@ -6,7 +6,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import Link from "next/link";
 import {
   tPalace, tGan, tZhi, tStar, tGeju, tWangShuai, tShiShen,
-  tYinYang, tWuXingJu, tSiHua,
+  tYinYang, tWuXingJu, tSiHua, tGanElement,
 } from "@/lib/glossary";
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -153,7 +153,7 @@ export default function ReadingPage() {
             <h3 className="text-xs text-stone-400 uppercase tracking-wide mb-2">BaZi</h3>
             <div className="space-y-0.5">
               <InfoRow label="Structure" value={tGeju(en?.['格局']?.primary) || '-'} />
-              <InfoRow label="Day Master" value={`${tGan(bz?.dayMaster)} Earth` || '-'} />
+              <InfoRow label="Day Master" value={bz?.dayMaster ? `${tGan(bz.dayMaster)} ${tGanElement(bz.dayMaster)}` : '-'} />
               <InfoRow label="Strength" value={`${tWangShuai(en?.['旺衰']?.verdict) || '-'} (${en?.['旺衰']?.score ?? '-'})`} />
               <InfoRow label="Seasonal Need" value={(en?.['调候用神'] || []).map(tGan).join(', ') || '-'} />
               <InfoRow label="Four Pillars" value={fourPillars} />

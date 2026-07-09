@@ -1,16 +1,29 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL || "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-// Public client — for client-side reads
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+function createSafeClient(url: string, key: string, opts?: { auth?: { persistSession: boolean } }): SupabaseClient | null {
+  if (!url || !key) return null;
+  return createClient(url, key, opts);
+}
+
+// Public client — for client-side reads (null if env not configured)
+export const supabase = createSafeClient(supabaseUrl, supabaseAnonKey);
 
 // Admin client — for server-side writes (bypasses RLS)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+export const supabaseAdmin = createSafeClient(supabaseUrl, supabaseServiceKey, {
   auth: { persistSession: false },
 });
+
+// Assert admin client is available — use in routes that require it
+export function requireSupabaseAdmin(): SupabaseClient {
+  if (!supabaseAdmin) {
+    throw new Error("Supabase not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY env vars.");
+  }
+  return supabaseAdmin;
+}
 
 // ═══════════════════════════════════════════════════════════
 // Table names (bazi_ prefix to avoid conflict with
