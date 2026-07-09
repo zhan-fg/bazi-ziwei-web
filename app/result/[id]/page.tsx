@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -16,16 +16,14 @@ export default function ResultPage() {
   const [posterHTML, setPosterHTML] = useState("");
 
   // Payment flow state
-  const [phase, setPhase] = useState<"init" | "polling" | "manual" | "claiming" | "unlocked" | "generating" | "done">(
+  const [phase, setPhase] = useState<"init" | "manual" | "claiming" | "unlocked" | "generating" | "done">(
     "init"
   );
   const [email, setEmail] = useState("");
   const [claimError, setClaimError] = useState("");
   const [analysis, setAnalysis] = useState("");
   const [analysisSource, setAnalysisSource] = useState("");
-  const pollCount = useRef(0);
-  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const maxPolls = 30; // 30 × 2s = 60s
+
 
   // Load chart data
   useEffect(() => {
@@ -54,12 +52,7 @@ export default function ResultPage() {
       .catch(() => {});
   }, [data, id]);
 
-  // Cleanup poll timer
-  useEffect(() => {
-    return () => {
-      if (pollTimer.current) clearInterval(pollTimer.current);
-    };
-  }, []);
+
 
   // Check if already unlocked from localStorage
   useEffect(() => {
@@ -74,93 +67,34 @@ export default function ResultPage() {
 
   // ─── Payment flow ───────────────────────────────────────
 
-  // Step 1: Init claim → open Gumroad
-  const startPayment = async () => {
+  // Step 1: Open Gumroad → go straight to email input
+  const startPayment = () => {
     setClaimError("");
+    const gumroadUrl = `${GUMROAD_PRODUCT_URL}?wanted=true`;
+    window.open(gumroadUrl, "_blank", "noopener,noreferrer");
+    setPhase("manual");
+  };
 
-    try {
-      // Generate claim token
-      const res = await fetch("/api/init-claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chartId: id }),
-      });
-      const d = await res.json();
-
-      if (!res.ok || !d.token) {
-        setClaimError("Failed to initialize payment. Please try again.");
-        return;
-      }
-
-      // Store token in localStorage
-      localStorage.setItem("bazi-claim-token", d.token);
-
-      // Open Gumroad with claim_token in URL
-      const gumroadUrl = `${GUMROAD_PRODUCT_URL}?claim_token=${encodeURIComponent(d.token)}`;
-      window.open(gumroadUrl, "_blank", "noopener,noreferrer");
-
-      // Start polling for webhook verification
-      setPhase("polling");
-      pollForVerification(d.token);
-    } catch {
-      setClaimError("Network error. Please try again.");
+  // Step 2: Verify purchase via email (queries shared processed_sales table)
+  const handleManualClaim = async () => {
+    if (!email.trim() || !email.includes("@")) {
+      setClaimError("Please enter a valid email address");
+      return;
     }
-  };
 
-  // Step 2: Poll claim-status until Gumroad Ping verifies
-  const pollForVerification = (token: string) => {
-    pollCount.current = 0;
-
-    const poll = async () => {
-      pollCount.current++;
-      try {
-        const res = await fetch(`/api/claim-status?token=${encodeURIComponent(token)}`);
-        const data = await res.json();
-
-        if (data.status === "verified") {
-          // Webhook verified — auto-claim!
-          if (pollTimer.current) clearInterval(pollTimer.current);
-          setEmail(data.email || "");
-          doClaim(data.email || "", token);
-        } else if (data.status === "claimed") {
-          if (pollTimer.current) clearInterval(pollTimer.current);
-          onUnlocked(data.email || "");
-        } else if (data.status === "not_found" || data.status === "expired" || pollCount.current >= maxPolls) {
-          if (pollTimer.current) clearInterval(pollTimer.current);
-          setPhase("manual");
-        }
-        // "pending" → keep polling
-      } catch {
-        if (pollCount.current >= maxPolls) {
-          if (pollTimer.current) clearInterval(pollTimer.current);
-          setPhase("manual");
-        }
-      }
-    };
-
-    poll(); // First poll immediately
-    pollTimer.current = setInterval(poll, 2000);
-  };
-
-  // Step 3: Claim the unlock
-  const doClaim = async (userEmail: string, token: string) => {
     setPhase("claiming");
     setClaimError("");
 
     try {
-      const res = await fetch("/api/claim-gumroad", {
+      const res = await fetch("/api/verify-purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: userEmail,
-          chartId: id,
-          token,
-        }),
+        body: JSON.stringify({ email: email.trim(), chartId: id }),
       });
 
       const d = await res.json();
 
-      if (res.ok && d.success) {
+      if (res.ok && d.verified) {
         // Save to localStorage
         try {
           const unlocked = JSON.parse(localStorage.getItem("bazi-unlocked") || "[]");
@@ -168,29 +102,17 @@ export default function ResultPage() {
             unlocked.push(id);
             localStorage.setItem("bazi-unlocked", JSON.stringify(unlocked));
           }
-          localStorage.removeItem("bazi-claim-token");
         } catch {}
 
-        onUnlocked(userEmail);
+        onUnlocked(email.trim());
       } else {
-        setClaimError(d.error || "Claim failed. Please try again.");
+        setClaimError(d.error || "No purchase found. Use the same email as your Gumroad purchase.");
         setPhase("manual");
       }
     } catch {
       setClaimError("Network error. Please try again.");
       setPhase("manual");
     }
-  };
-
-  // Step 4: Manual claim (user enters email)
-  const handleManualClaim = async () => {
-    if (!email.trim() || !email.includes("@")) {
-      setClaimError("Please enter a valid email address");
-      return;
-    }
-
-    const token = localStorage.getItem("bazi-claim-token") || "";
-    await doClaim(email.trim(), token);
   };
 
   // ─── After unlock: generate reading ─────────────────────
@@ -285,21 +207,7 @@ export default function ResultPage() {
 
       {/* Reading section */}
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Polling state */}
-        {phase === "polling" && (
-          <div className="text-center py-12 space-y-4">
-            <svg className="animate-spin h-8 w-8 text-amber-600 mx-auto" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            <p className="text-stone-700 font-medium">Verifying your payment...</p>
-            <p className="text-stone-400 text-sm">
-              Complete your purchase on Gumroad and this page will update automatically
-            </p>
-          </div>
-        )}
-
-        {/* Manual email input (fallback when polling times out) */}
+        {/* Email input */}
         {(phase === "manual" || phase === "claiming") && (
           <div className="text-center space-y-4">
             <h2 className="text-lg font-semibold text-stone-800">Unlock Your Full Reading</h2>
