@@ -91,7 +91,7 @@ export default function ResultPage() {
 
     const gumroadUrl = token
       ? `${GUMROAD_PRODUCT_URL}?claim_token=${encodeURIComponent(token)}`
-      : `${GUMROAD_PRODUCT_URL}?wanted=true`;
+      : GUMROAD_PRODUCT_URL;
     window.open(gumroadUrl, "_blank", "noopener,noreferrer");
 
     if (token) {
@@ -167,8 +167,9 @@ export default function ResultPage() {
       });
       const d = await res.json();
       if (d.verified) {
+        setEmail(userEmail);
         saveUnlock();
-        onUnlocked();
+        onUnlocked(userEmail);
         return;
       }
       setClaimError(d.error || "No purchase found. Use the same email as your Gumroad purchase.");
@@ -191,19 +192,19 @@ export default function ResultPage() {
 
   // ─── Generate reading ───────────────────────────────────
 
-  const onUnlocked = useCallback(() => {
+  const onUnlocked = useCallback((userEmail: string) => {
     setPhase("generating");
-    generateReading();
+    generateReading(userEmail);
   }, [id]);
 
-  const generateReading = async () => {
+  const generateReading = async (userEmail: string) => {
     try {
       const res = await fetch("/api/generate-reading", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chartId: id,
-          email: email || `unlocked-${id}@bazi.local`,
+          email: userEmail,
           chartText: data?.chartText,
           chart: data?.chart,
           birthInfo: data?.birthInfo,
@@ -337,10 +338,6 @@ export default function ResultPage() {
             <p className="text-stone-400 text-sm max-w-xs mx-auto">
               Complete your purchase on Gumroad and this page will unlock automatically
             </p>
-            <button onClick={() => { if (pollRef.current) clearInterval(pollRef.current); setPhase("manual"); }}
-              className="text-amber-600 hover:text-amber-700 text-sm underline mt-2">
-              Or verify manually with your email →
-            </button>
           </div>
         )}
 
@@ -406,7 +403,7 @@ export default function ResultPage() {
         {phase === "done" && analysis && analysis.startsWith("Error") && (
           <div className="text-center py-8">
             <p className="text-red-600 text-sm">{analysis}</p>
-            <button onClick={() => { setPhase("generating"); generateReading(); }}
+            <button onClick={() => { setPhase("generating"); generateReading(email || ""); }}
               className="mt-4 text-amber-600 hover:text-amber-700 text-sm underline">Try again</button>
           </div>
         )}
@@ -430,7 +427,7 @@ export default function ResultPage() {
         {/* Already unlocked */}
         {phase === "unlocked" && (
           <div className="text-center space-y-3">
-            <button onClick={() => { setPhase("generating"); generateReading(); }}
+            <button onClick={() => { setPhase("generating"); generateReading(email || ""); }}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200">
               Generate Reading
             </button>
