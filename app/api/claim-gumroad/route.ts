@@ -89,6 +89,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── Final fallback: check Gumroad API directly ──
+    if (!userRecord || (userRecord.report_unlocks_remaining || 0) <= 0) {
+      const { verifyPurchase } = await import("@/lib/gumroad");
+      const gumroadVerified = await verifyPurchase(normalizedEmail);
+      if (gumroadVerified) {
+        // Create user with 1 unlock
+        const { data: newUser } = await supabaseAdmin.from(TABLES.users)
+          .insert({
+            anonymous_id: `gumroad-api-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            email: normalizedEmail,
+            free_uses_remaining: 0,
+            report_unlocks_remaining: 1,
+            subscription_status: "none",
+          })
+          .select("id, report_unlocks_remaining")
+          .single();
+        userRecord = newUser;
+      }
+    }
+
     const reportUnlocks = userRecord?.report_unlocks_remaining || 0;
 
     if (!userRecord || reportUnlocks <= 0) {
