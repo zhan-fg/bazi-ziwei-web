@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -27,8 +27,11 @@ export default function ResultPage() {
   const [email, setEmail] = useState("");
   const [claimError, setClaimError] = useState("");
   const [analysis, setAnalysis] = useState("");
-  const [analysisSource, setAnalysisSource] = useState("");
+  const [exporting, setExporting] = useState(false);
 
+  // Refs for export
+  const posterRef = useRef<HTMLDivElement>(null);
+  const readingRef = useRef<HTMLDivElement>(null);
 
   // Load chart data
   useEffect(() => {
@@ -57,8 +60,6 @@ export default function ResultPage() {
       .catch(() => {});
   }, [data, id]);
 
-
-
   // Check if already unlocked from localStorage
   useEffect(() => {
     if (!id) return;
@@ -72,7 +73,6 @@ export default function ResultPage() {
 
   // ─── Payment flow ───────────────────────────────────────
 
-  // Step 1: Open Gumroad → go straight to email input
   const startPayment = () => {
     setClaimError("");
     const gumroadUrl = `${GUMROAD_PRODUCT_URL}?wanted=true`;
@@ -80,7 +80,6 @@ export default function ResultPage() {
     setPhase("manual");
   };
 
-  // Step 2: Verify purchase via email (queries shared processed_sales table)
   const handleManualClaim = async () => {
     if (!email.trim() || !email.includes("@")) {
       setClaimError("Please enter a valid email address");
@@ -100,7 +99,6 @@ export default function ResultPage() {
       const d = await res.json();
 
       if (res.ok && d.verified) {
-        // Save to localStorage
         try {
           const unlocked = JSON.parse(localStorage.getItem("bazi-unlocked") || "[]");
           if (!unlocked.includes(id)) {
@@ -146,29 +144,61 @@ export default function ResultPage() {
 
       if (res.ok && d.analysis) {
         setAnalysis(d.analysis);
-        setAnalysisSource(d.source || "deepseek");
       } else {
         setAnalysis(`Error: ${d.error || "Failed to generate reading"}`);
-        setAnalysisSource("error");
       }
     } catch (err: any) {
       setAnalysis(`Error: ${err.message}`);
-      setAnalysisSource("error");
     } finally {
       setPhase("done");
     }
   };
 
-  // ─── Download poster ────────────────────────────────────
+  // ─── Export as two images ───────────────────────────────
 
-  const handleDownload = () => {
-    if (!posterHTML) return;
-    const blob = new Blob([posterHTML], { type: "text/html" });
-    const a = document.createElement("a");
-    a.download = `bazi-ziwei-chart-${id}.html`;
-    a.href = URL.createObjectURL(blob);
-    a.click();
-    URL.revokeObjectURL(a.href);
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+
+      // Export poster image
+      if (posterRef.current) {
+        const posterCanvas = await html2canvas(posterRef.current, {
+          backgroundColor: "#f5f0eb",
+          scale: 2,
+        });
+        const posterBlob = await new Promise<Blob>((resolve) =>
+          posterCanvas.toBlob((b) => resolve(b!), "image/png")
+        );
+        const posterUrl = URL.createObjectURL(posterBlob);
+        const a1 = document.createElement("a");
+        a1.download = `bazi-chart-${id}.png`;
+        a1.href = posterUrl;
+        a1.click();
+        URL.revokeObjectURL(posterUrl);
+      }
+
+      // Export reading image
+      if (readingRef.current) {
+        const readingCanvas = await html2canvas(readingRef.current, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+        });
+        const readingBlob = await new Promise<Blob>((resolve) =>
+          readingCanvas.toBlob((b) => resolve(b!), "image/png")
+        );
+        const readingUrl = URL.createObjectURL(readingBlob);
+        const a2 = document.createElement("a");
+        a2.download = `bazi-reading-${id}.png`;
+        a2.href = readingUrl;
+        a2.click();
+        URL.revokeObjectURL(readingUrl);
+      }
+    } catch (err) {
+      console.error("Export failed:", err);
+    } finally {
+      setExporting(false);
+    }
   };
 
   // ─── Render ─────────────────────────────────────────────
@@ -193,17 +223,20 @@ export default function ResultPage() {
         <div className="text-xs text-stone-400">
           {bi?.gender === 'male' ? 'Male' : 'Female'} · {bi?.year}-{String(bi?.month).padStart(2, '0')}-{String(bi?.day).padStart(2, '0')}
         </div>
-        <div className="w-20" />
+        {phase === "done" && (
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full transition disabled:opacity-50"
+          >
+            {exporting ? "Exporting..." : "Share"}
+          </button>
+        )}
+        {phase !== "done" && <div className="w-16" />}
       </div>
 
       {/* Poster */}
-      <div className="relative bg-stone-100">
-        {posterHTML && (
-          <button onClick={handleDownload}
-            className="absolute top-3 right-3 z-10 bg-stone-800/80 hover:bg-stone-900 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm transition">
-            ↓ Save
-          </button>
-        )}
+      <div ref={posterRef} className="relative bg-stone-100">
         {posterHTML ? (
           <iframe srcDoc={posterHTML} className="w-full border-none"
             style={{ height: "calc(100vh - 60px)", minHeight: "800px" }}
@@ -218,7 +251,7 @@ export default function ResultPage() {
         {/* Email input */}
         {(phase === "manual" || phase === "claiming") && (
           <div className="text-center space-y-4">
-            <h2 className="text-lg font-semibold text-stone-800">Unlock Your Full Reading</h2>
+            <h2 className="text-lg font-semibold text-stone-800">Verification</h2>
             <p className="text-stone-500 text-sm">
               Enter the email you used on Gumroad to verify your purchase
             </p>
@@ -254,26 +287,22 @@ export default function ResultPage() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <p className="text-stone-700 font-medium">Generating your complete reading...</p>
-            <p className="text-stone-400 text-sm">DeepSeek AI is analyzing your BaZi and Ziwei chart</p>
+            <p className="text-stone-700 font-medium">正在分析您的八字和紫微命盘</p>
           </div>
         )}
 
         {/* Done — show analysis */}
-        {phase === "done" && analysis && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-stone-800">Your Complete Reading</h2>
-            </div>
+        {phase === "done" && analysis && !analysis.startsWith("Error") && (
+          <div ref={readingRef} className="bg-white rounded-xl border border-stone-200 p-6">
             <div
-              className="prose prose-stone max-w-none text-sm leading-relaxed bg-white rounded-xl border border-stone-200 p-6"
+              className="prose prose-stone max-w-none text-sm leading-relaxed"
               dangerouslySetInnerHTML={{ __html: parseMarkdown(analysis) }}
             />
           </div>
         )}
 
         {/* Done — error */}
-        {phase === "done" && analysisSource === "error" && (
+        {phase === "done" && analysis && analysis.startsWith("Error") && (
           <div className="text-center py-8">
             <p className="text-red-600 text-sm">{analysis}</p>
             <button
@@ -289,7 +318,7 @@ export default function ResultPage() {
         {(phase === "init") && (
           <div className="text-center space-y-3">
             <h2 className="text-lg font-semibold text-stone-800">
-              Unlock Your Complete Reading
+              命盘解读
             </h2>
             <p className="text-stone-500 text-sm max-w-sm mx-auto">
               Get a full BaZi + Ziwei analysis powered by DeepSeek AI —
@@ -302,7 +331,7 @@ export default function ResultPage() {
               onClick={startPayment}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
             >
-              Unlock Full Reading · {GUMROAD_PRICE}
+              Unlock · {GUMROAD_PRICE}
             </button>
             <p className="text-xs text-stone-400">
               One-time purchase · Secured by Gumroad · Opens in new tab
@@ -317,7 +346,7 @@ export default function ResultPage() {
               onClick={() => { setPhase("generating"); generateReading(email || ""); }}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
             >
-              Generate Full Reading
+              Generate Reading
             </button>
             <p className="text-xs text-stone-400">Already unlocked · No additional charge</p>
           </div>
