@@ -287,7 +287,7 @@ export default function ResultPage() {
         {phase === "done" && analysis && analysis.startsWith("Error") && (
           <div className="text-center py-8">
             <p className="text-red-600 text-sm">{analysis}</p>
-            <button onClick={() => { setPhase("generating"); generateReading(email); }}
+            <button onClick={() => { setPhase("manual"); setClaimError(""); }}
               className="mt-4 text-amber-600 hover:text-amber-700 text-sm underline">Try again</button>
           </div>
         )}
