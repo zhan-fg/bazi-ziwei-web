@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ analysis: text, source: "algorithm", chartId });
     }
 
-    // Load prompt
+    // Load system prompt (skill-style: 3-phase analysis)
     const promptPath = path.join(process.cwd(), "prompts", "zonghe-yinzheng-prompt.md");
     let systemPrompt: string;
     if (fs.existsSync(promptPath)) {
@@ -87,7 +87,19 @@ export async function POST(request: NextRequest) {
       systemPrompt = `You are a master of Chinese astrology — BaZi and Zi Wei Dou Shu. Analyze this chart and produce a comprehensive reading with sections: Overview, Career & Wealth, Relationships, Health, Life Cycles, and Guidance. Write warmly and authoritatively.`;
     }
 
-    const analysis = await generateAnalysis(systemPrompt, textForLLM, { maxTokens: 8192 });
+    // Build user message: birth info + chart data (for skill-style 3-phase analysis)
+    const bi = data.birthInfo;
+    const userMessage = [
+      `## 出生信息`,
+      `- 性別：${bi.gender === 'male' ? '男' : '女'}`,
+      `- 出生日期：${bi.year}年${bi.month}月${bi.day}日 ${String(bi.hour).padStart(2, '0')}:${String(bi.minute).padStart(2, '0')}`,
+      `- 曆法：${bi.isLunar ? '農曆' : '公曆'}`,
+      ``,
+      `## 算法層命盤數據`,
+      textForLLM,
+    ].join('\n');
+
+    const analysis = await generateAnalysis(systemPrompt, userMessage, { maxTokens: 8192 });
 
     // Cache result in Supabase
     await db
