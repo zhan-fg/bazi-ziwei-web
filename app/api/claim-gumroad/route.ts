@@ -52,20 +52,35 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    // ── Fallback 1: check shared processed_sales (chinese-name table) ──
-    // If the webhook missed the bazi product (e.g. env var not set),
-    // the sale is recorded in the shared processed_sales table.
+    // ── Fallback 1: check both processed_sales tables ──
+    // The shared Gumroad webhook writes ALL purchases to `processed_sales`.
+    // Filter by product_permalink containing "pyzrg" to distinguish bazi purchases
+    // from chinese-name purchases (kqzwc, uawodz, etc.).
+    // Also check bazi_processed_sales in case the webhook's bazi branch ran.
     if (!userRecord || (userRecord.report_unlocks_remaining || 0) <= 0) {
-      const { data: saleRecord } = await supabaseAdmin
-        .from("processed_sales")
-        .select("id")
-        .eq("email", normalizedEmail)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const [{ data: sharedSale }, { data: baziSale }] = await Promise.all([
+        supabaseAdmin
+          .from("processed_sales")
+          .select("id, product_permalink")
+          .eq("email", normalizedEmail)
+          .ilike("product_permalink", "%pyzrg%")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabaseAdmin
+          .from(TABLES.processedSales)
+          .select("id")
+          .eq("email", normalizedEmail)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const saleRecord = sharedSale || baziSale;
 
       if (saleRecord) {
-        console.log(`claim-gumroad: found purchase in processed_sales for ${normalizedEmail}`);
+        const source = sharedSale ? "processed_sales" : "bazi_processed_sales";
+        console.log(`claim-gumroad: found bazi purchase in ${source} for ${normalizedEmail}`);
         if (userRecord) {
           await supabaseAdmin.from(TABLES.users)
             .update({
@@ -77,43 +92,6 @@ export async function POST(request: NextRequest) {
           const { data: newUser } = await supabaseAdmin.from(TABLES.users)
             .insert({
               anonymous_id: `recovery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-              email: normalizedEmail,
-              free_uses_remaining: 0,
-              report_unlocks_remaining: 1,
-              subscription_status: "none",
-            })
-            .select("id, report_unlocks_remaining")
-            .single();
-          userRecord = newUser;
-        }
-      }
-    }
-
-    // ── Fallback 2: check bazi_processed_sales (own table) ──
-    // If handleBaziPurchase ran but bazi_users write failed for any reason,
-    // the sale is still recorded in bazi_processed_sales.
-    if (!userRecord || (userRecord.report_unlocks_remaining || 0) <= 0) {
-      const { data: baziSaleRecord } = await supabaseAdmin
-        .from(TABLES.processedSales)
-        .select("id")
-        .eq("email", normalizedEmail)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (baziSaleRecord) {
-        console.log(`claim-gumroad: found purchase in bazi_processed_sales for ${normalizedEmail}`);
-        if (userRecord) {
-          await supabaseAdmin.from(TABLES.users)
-            .update({
-              report_unlocks_remaining: (userRecord.report_unlocks_remaining || 0) + 1,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", userRecord.id);
-        } else {
-          const { data: newUser } = await supabaseAdmin.from(TABLES.users)
-            .insert({
-              anonymous_id: `bazi-recovery-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
               email: normalizedEmail,
               free_uses_remaining: 0,
               report_unlocks_remaining: 1,
