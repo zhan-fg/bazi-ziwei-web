@@ -124,7 +124,7 @@ export default function ResultPage() {
           doClaim(data.email || "", token);
         } else if (data.status === "claimed") {
           if (pollTimer.current) clearInterval(pollTimer.current);
-          onUnlocked();
+          onUnlocked(data.email || "");
         } else if (data.status === "not_found" || data.status === "expired" || pollCount.current >= maxPolls) {
           if (pollTimer.current) clearInterval(pollTimer.current);
           setPhase("manual");
@@ -171,7 +171,7 @@ export default function ResultPage() {
           localStorage.removeItem("bazi-claim-token");
         } catch {}
 
-        onUnlocked();
+        onUnlocked(userEmail);
       } else {
         setClaimError(d.error || "Claim failed. Please try again.");
         setPhase("manual");
@@ -195,14 +195,14 @@ export default function ResultPage() {
 
   // ─── After unlock: generate reading ─────────────────────
 
-  const onUnlocked = useCallback(() => {
+  const onUnlocked = useCallback((userEmail: string) => {
     setPhase("generating");
-    generateReading();
+    generateReading(userEmail);
   }, [id]);
 
-  const generateReading = async () => {
+  const generateReading = async (userEmail: string) => {
     try {
-      const savedEmail = email || "";
+      const savedEmail = userEmail || email || "";
       const res = await fetch("/api/generate-reading", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -365,7 +365,7 @@ export default function ResultPage() {
           <div className="text-center py-8">
             <p className="text-red-600 text-sm">{analysis}</p>
             <button
-              onClick={() => { setPhase("generating"); generateReading(); }}
+              onClick={() => { setPhase("generating"); generateReading(email || ""); }}
               className="mt-4 text-amber-600 hover:text-amber-700 text-sm underline"
             >
               Try again
@@ -402,7 +402,7 @@ export default function ResultPage() {
         {(phase === "unlocked") && (
           <div className="text-center space-y-3">
             <button
-              onClick={() => { setPhase("generating"); generateReading(); }}
+              onClick={() => { setPhase("generating"); generateReading(email || ""); }}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
             >
               Generate Full Reading
