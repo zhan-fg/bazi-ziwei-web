@@ -20,18 +20,14 @@ export default function ResultPage() {
   const [error, setError] = useState("");
   const [posterHTML, setPosterHTML] = useState("");
 
-  // Payment flow
-  const [phase, setPhase] = useState<"init" | "manual" | "polling" | "unlocked" | "generating" | "done">(
-    "init"
-  );
-  const [email, setEmail] = useState("");
-  const [claimError, setClaimError] = useState("");
+  // Flow: init → polling → generating → done
+  const [phase, setPhase] = useState<"init" | "polling" | "unlocked" | "generating" | "done">("init");
   const [analysis, setAnalysis] = useState("");
   const [exporting, setExporting] = useState<"" | "chart" | "reading">("");
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
-  const MAX_POLLS = 30; // 30 × 3s = 90s
+  const MAX_POLLS = 45; // 45 × 2s = 90s
 
   // Refs
   const posterFrameRef = useRef<HTMLIFrameElement>(null);
@@ -82,59 +78,78 @@ export default function ResultPage() {
 
   // ─── Payment flow ───────────────────────────────────────
 
-  const startPayment = () => {
-    setClaimError("");
-    const gumroadUrl = `${GUMROAD_PRODUCT_URL}?wanted=true`;
-    window.open(gumroadUrl, "_blank", "noopener,noreferrer");
-    setPhase("manual");
-  };
-
-  const verifyPurchase = async (emailToCheck: string) => {
-    const res = await fetch("/api/verify-purchase", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: emailToCheck, chartId: id }),
-    });
-    return await res.json();
-  };
-
-  const startPolling = async () => {
-    const emailToCheck = email.trim();
-    if (!emailToCheck || !emailToCheck.includes("@")) {
-      setClaimError("Please enter a valid email address");
-      return;
+  const startPayment = async () => {
+    // 1. Generate claim token
+    let token = "";
+    try {
+      const res = await fetch("/api/init-claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chartId: id }),
+      });
+      const d = await res.json();
+      token = d.token;
+    } catch {
+      // If init-claim fails, open Gumroad without token — user will need manual flow
     }
 
-    setPhase("polling");
-    setClaimError("");
-    pollCountRef.current = 0;
+    // 2. Open Gumroad with claim token in URL
+    const gumroadUrl = token
+      ? `${GUMROAD_PRODUCT_URL}?claim_token=${encodeURIComponent(token)}`
+      : `${GUMROAD_PRODUCT_URL}?wanted=true`;
+    window.open(gumroadUrl, "_blank", "noopener,noreferrer");
 
-    // Clear any existing poll
+    // 3. Start polling
+    setPhase("polling");
+    if (token) startPolling(token);
+  };
+
+  const startPolling = (token: string) => {
+    pollCountRef.current = 0;
     if (pollRef.current) clearInterval(pollRef.current);
 
     const poll = async () => {
       pollCountRef.current++;
       try {
-        const d = await verifyPurchase(emailToCheck);
-        if (d.verified) {
+        const res = await fetch(`/api/claim-status?token=${encodeURIComponent(token)}`);
+        const d = await res.json();
+
+        if (d.status === "verified" || d.status === "claimed") {
           if (pollRef.current) clearInterval(pollRef.current);
-          saveUnlock();
-          onUnlocked(emailToCheck);
+          const email = d.email || "";
+          if (email) await finalizeUnlock(email);
+          else onUnlocked();
+          return;
+        }
+
+        if (d.status === "expired") {
+          if (pollRef.current) clearInterval(pollRef.current);
+          setError("Claim token expired. Please try again.");
           return;
         }
       } catch {}
 
       if (pollCountRef.current >= MAX_POLLS) {
         if (pollRef.current) clearInterval(pollRef.current);
-        setClaimError("Purchase not detected yet. Make sure you completed payment with this email, or try again.");
-        setPhase("manual");
+        setError("Purchase not detected. Please make sure you completed payment on Gumroad, then refresh this page.");
       }
     };
 
-    // First check immediately
-    poll();
-    // Then poll every 3 seconds
-    pollRef.current = setInterval(poll, 3000);
+    poll(); // first check immediately
+    pollRef.current = setInterval(poll, 2000);
+  };
+
+  // Call verify-purchase to create bazi_users entry, then unlock
+  const finalizeUnlock = async (userEmail: string) => {
+    try {
+      await fetch("/api/verify-purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, chartId: id }),
+      });
+    } catch {}
+    saveUnlock();
+    onUnlocked();
   };
 
   const saveUnlock = () => {
@@ -149,20 +164,19 @@ export default function ResultPage() {
 
   // ─── After unlock: generate reading ─────────────────────
 
-  const onUnlocked = useCallback((userEmail: string) => {
+  const onUnlocked = useCallback(() => {
     setPhase("generating");
-    generateReading(userEmail);
-  }, [id, email]);
+    generateReading();
+  }, [id]);
 
-  const generateReading = async (userEmail: string) => {
+  const generateReading = async () => {
     try {
-      const savedEmail = userEmail || email || "";
       const res = await fetch("/api/generate-reading", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chartId: id,
-          email: savedEmail,
+          email: `unlocked-${id}@bazi.local`, // marker — actual email from claim token
           chartText: data?.chartText,
           chart: data?.chart,
           birthInfo: data?.birthInfo,
@@ -248,8 +262,14 @@ export default function ResultPage() {
   if (error) {
     return (
       <main className="flex-1 flex flex-col items-center justify-center p-8 gap-4">
-        <p className="text-red-600">{error}</p>
-        <Link href="/" className="text-amber-600 hover:underline">Back</Link>
+        <p className="text-red-600 text-sm text-center max-w-sm">{error}</p>
+        <button
+          onClick={() => { setError(""); setPhase("init"); }}
+          className="text-amber-600 hover:underline text-sm"
+        >
+          Try again
+        </button>
+        <Link href="/" className="text-amber-600 hover:underline text-sm">← New Reading</Link>
       </main>
     );
   }
@@ -286,7 +306,7 @@ export default function ResultPage() {
         )}
       </div>
 
-      {/* Poster — responsive: scale down on narrow screens */}
+      {/* Poster */}
       <div className="bg-stone-100 overflow-hidden flex justify-center">
         {posterHTML ? (
           <div className="w-full flex justify-center" style={{ minHeight: "400px" }}>
@@ -316,60 +336,17 @@ export default function ResultPage() {
 
       {/* Reading section */}
       <div className="max-w-3xl mx-auto px-4 py-8">
-        {/* Email input */}
-        {(phase === "manual") && (
-          <div className="text-center space-y-4">
-            <h2 className="text-lg font-semibold text-stone-800">Unlock Your Reading</h2>
-            <p className="text-stone-500 text-sm">
-              Enter the email you used on Gumroad — we'll verify your purchase automatically
-            </p>
-            {claimError && (
-              <p className="text-red-500 text-sm bg-red-50 py-2 px-4 rounded-lg">{claimError}</p>
-            )}
-            <div className="flex gap-2 max-w-sm mx-auto">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && startPolling()}
-                placeholder="you@email.com"
-                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                autoFocus
-              />
-              <button
-                onClick={startPolling}
-                disabled={!email.trim()}
-                className="px-6 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition"
-              >
-                Verify
-              </button>
-            </div>
-            <p className="text-xs text-stone-400">
-              Complete your purchase on Gumroad first, then come back here
-            </p>
-          </div>
-        )}
-
         {/* Polling state */}
         {phase === "polling" && (
-          <div className="text-center py-12 space-y-3">
+          <div className="text-center py-12 space-y-4">
             <svg className="animate-spin h-8 w-8 text-amber-600 mx-auto" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <p className="text-stone-700 font-medium">Checking for your purchase...</p>
-            <p className="text-stone-400 text-sm">
-              This may take up to 90 seconds after completing payment on Gumroad
+            <p className="text-stone-700 font-medium">Waiting for your payment...</p>
+            <p className="text-stone-400 text-sm max-w-xs mx-auto">
+              Complete your purchase on Gumroad and this page will unlock automatically
             </p>
-            <button
-              onClick={() => {
-                if (pollRef.current) clearInterval(pollRef.current);
-                setPhase("manual");
-              }}
-              className="text-amber-600 hover:text-amber-700 text-sm underline mt-4"
-            >
-              Cancel
-            </button>
           </div>
         )}
 
@@ -399,7 +376,7 @@ export default function ResultPage() {
           <div className="text-center py-8">
             <p className="text-red-600 text-sm">{analysis}</p>
             <button
-              onClick={() => { setPhase("generating"); generateReading(email || ""); }}
+              onClick={() => { setPhase("generating"); generateReading(); }}
               className="mt-4 text-amber-600 hover:text-amber-700 text-sm underline"
             >
               Try again
@@ -415,9 +392,6 @@ export default function ResultPage() {
               Unlock a personalized BaZi + Ziwei deep reading —
               career, wealth, relationships, health, and life guidance.
             </p>
-            {claimError && (
-              <p className="text-red-500 text-sm bg-red-50 py-2 px-4 rounded-lg">{claimError}</p>
-            )}
             <button
               onClick={startPayment}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
@@ -434,7 +408,7 @@ export default function ResultPage() {
         {(phase === "unlocked") && (
           <div className="text-center space-y-3">
             <button
-              onClick={() => { setPhase("generating"); generateReading(email || ""); }}
+              onClick={() => { setPhase("generating"); generateReading(); }}
               className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200"
             >
               Generate Reading
