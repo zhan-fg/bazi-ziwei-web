@@ -4,6 +4,11 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { marked } from "marked";
+
+function parseMarkdown(text: string): string {
+  return marked.parse(text, { breaks: true }) as string;
+}
 
 const GUMROAD_PRODUCT_URL = process.env.NEXT_PUBLIC_GUMROAD_URL || "https://zhanqiuhui.gumroad.com/l/pyzrg";
 const GUMROAD_PRICE = process.env.NEXT_PUBLIC_GUMROAD_PRICE || "$4.99";
@@ -259,15 +264,11 @@ export default function ResultPage() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-stone-800">Your Complete Reading</h2>
-              <span className="text-xs text-stone-400 bg-stone-100 px-2 py-1 rounded">
-                {analysisSource === "deepseek" ? "✦ DeepSeek AI" :
-                 analysisSource === "cache" ? "📦 Cached" :
-                 analysisSource === "algorithm" ? "⚙ Algorithm" : ""}
-              </span>
             </div>
-            <div className="prose prose-stone max-w-none text-sm leading-relaxed whitespace-pre-wrap bg-white rounded-xl border border-stone-200 p-6">
-              {analysis}
-            </div>
+            <div
+              className="prose prose-stone max-w-none text-sm leading-relaxed bg-white rounded-xl border border-stone-200 p-6"
+              dangerouslySetInnerHTML={{ __html: parseMarkdown(analysis) }}
+            />
           </div>
         )}
 
