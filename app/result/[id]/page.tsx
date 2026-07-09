@@ -178,9 +178,14 @@ export default function ResultPage() {
         const a1 = document.createElement("a");
         a1.download = `bazi-chart-${id}.png`;
         a1.href = chartUrl;
+        document.body.appendChild(a1);
         a1.click();
-        URL.revokeObjectURL(chartUrl);
+        document.body.removeChild(a1);
+        setTimeout(() => URL.revokeObjectURL(chartUrl), 1000);
       }
+
+      // Small delay so browser doesn't block the second download
+      await new Promise((r) => setTimeout(r, 300));
 
       // 2. Export reading
       if (readingRef.current) {
@@ -195,8 +200,10 @@ export default function ResultPage() {
         const a2 = document.createElement("a");
         a2.download = `bazi-reading-${id}.png`;
         a2.href = readingUrl;
+        document.body.appendChild(a2);
         a2.click();
-        URL.revokeObjectURL(readingUrl);
+        document.body.removeChild(a2);
+        setTimeout(() => URL.revokeObjectURL(readingUrl), 1000);
       }
     } catch (err) {
       console.error("Export failed:", err);
