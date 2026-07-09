@@ -1,12 +1,12 @@
-// DeepSeek API client for Bazi & Ziwei reading generation.
+// LLM API client for Bazi & Ziwei reading generation.
 // Configure via env vars:
-//   DEEPSEEK_API_KEY   (required)
-//   DEEPSEEK_BASE_URL  (default: https://api.deepseek.com/v1)
-//   DEEPSEEK_MODEL     (default: deepseek-chat)
+//   LLM_API_KEY    (required — your DeepSeek / OpenAI-compatible API key)
+//   LLM_API_BASE   (default: https://api.deepseek.com/v1)
+//   LLM_MODEL      (default: deepseek-chat)
 
-const API_KEY = process.env.DEEPSEEK_API_KEY || '';
-const API_BASE = process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com/v1';
-const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-chat';
+const API_KEY = process.env.LLM_API_KEY || '';
+const API_BASE = process.env.LLM_API_BASE || 'https://api.deepseek.com/v1';
+const MODEL = process.env.LLM_MODEL || 'deepseek-chat';
 
 export function isLLMConfigured(): boolean {
   return !!API_KEY;
@@ -17,7 +17,7 @@ export async function generateAnalysis(
   userContent: string,
   options?: { maxTokens?: number }
 ): Promise<string> {
-  if (!API_KEY) throw new Error('DEEPSEEK_API_KEY not configured');
+  if (!API_KEY) throw new Error('LLM_API_KEY not configured');
 
   const maxTokens = options?.maxTokens || 8192;
 
@@ -53,7 +53,7 @@ export async function generateAnalysisStreaming(
   onChunk: (text: string) => void,
   options?: { maxTokens?: number }
 ): Promise<string> {
-  if (!API_KEY) throw new Error('DEEPSEEK_API_KEY not configured');
+  if (!API_KEY) throw new Error('LLM_API_KEY not configured');
 
   const maxTokens = options?.maxTokens || 8192;
 
