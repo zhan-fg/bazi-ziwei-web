@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         .eq("email", normalizedEmail)
         .order("created_at", { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (saleRecord) {
         // Sale exists in chinese-name's table — grant the unlock
