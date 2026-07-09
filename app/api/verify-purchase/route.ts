@@ -4,11 +4,9 @@ import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
 /**
  * POST /api/verify-purchase
  *
- * Verifies a Gumroad purchase by querying the shared `processed_sales` table.
- * Filters by product_permalink containing "pyzrg" for bazi-ziwei purchases.
- *
- * Only grants one unlock per unique sale. Tracks consumed sales in
- * bazi_processed_sales to prevent reuse.
+ * Checks both processed_sales (shared chinese-name table) and
+ * bazi_processed_sales (bazi-ziwei table) for a purchase matching
+ * the given email. Grants one unlock per unique sale_id.
  *
  * Body: { email: string, chartId: string }
  */
@@ -20,15 +18,27 @@ export async function POST(request: NextRequest) {
     const db = requireSupabaseAdmin();
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Find the most recent un-consumed bazi purchase for this email
-    const { data: sale } = await db
-      .from("processed_sales")
-      .select("id, sale_id, email, product_permalink, price, created_at")
-      .eq("email", normalizedEmail)
-      .ilike("product_permalink", "%pyzrg%")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Query both tables in parallel
+    const [{ data: sharedSale }, { data: baziSale }] = await Promise.all([
+      db.from("processed_sales")
+        .select("id, sale_id, email, product_permalink, price, created_at")
+        .eq("email", normalizedEmail)
+        .ilike("product_permalink", "%pyzrg%")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      db.from(TABLES.processedSales)
+        .select("id, sale_id, email, product_permalink, price, created_at")
+        .eq("email", normalizedEmail)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    // Pick most recent
+    const sale = [sharedSale, baziSale]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b!.created_at).getTime() - new Date(a!.created_at).getTime())[0];
 
     if (!sale) {
       return NextResponse.json({
@@ -37,28 +47,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if this sale was already consumed
+    // Check if this sale_id was already consumed
     const { data: consumed } = await db
       .from(TABLES.processedSales)
       .select("id")
       .eq("sale_id", sale.sale_id)
       .maybeSingle();
 
-    // Upsert user record
+    // Get or create user
     const { data: user } = await db
       .from(TABLES.users)
       .select("id, report_unlocks_remaining, unlocked_charts")
       .eq("email", normalizedEmail)
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const unlockedCharts: string[] = user?.unlocked_charts || [];
     const alreadyUnlocked = unlockedCharts.includes(chartId);
     const hasRemaining = (user?.report_unlocks_remaining || 0) > 0;
 
     if (alreadyUnlocked || hasRemaining) {
-      // Already has access — just add chart to unlocked list if needed
       if (!alreadyUnlocked && user) {
         unlockedCharts.push(chartId);
         await db.from(TABLES.users)
@@ -69,23 +78,22 @@ export async function POST(request: NextRequest) {
     }
 
     if (consumed) {
-      // Purchase exists but was already used — no more unlocks
       return NextResponse.json({
         verified: false,
         error: "This purchase has already been used. Please make a new purchase to unlock another chart.",
       });
     }
 
-    // New unlock from this sale — mark as consumed
+    // Mark consumed
     await db.from(TABLES.processedSales).insert({
       sale_id: sale.sale_id,
       email: normalizedEmail,
-      product_permalink: sale.product_permalink,
-      price: sale.price,
+      product_permalink: sale.product_permalink || "",
+      price: sale.price || 0,
       created_at: new Date().toISOString(),
     });
 
-    // Grant one unlock
+    // Grant unlock
     if (user) {
       unlockedCharts.push(chartId);
       await db.from(TABLES.users)
