@@ -29,8 +29,8 @@ export default function ResultPage() {
   const [analysis, setAnalysis] = useState("");
   const [exporting, setExporting] = useState(false);
 
-  // Refs for export
-  const posterRef = useRef<HTMLDivElement>(null);
+  // Refs
+  const posterFrameRef = useRef<HTMLIFrameElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
 
   // Load chart data
@@ -161,24 +161,28 @@ export default function ResultPage() {
     try {
       const html2canvas = (await import("html2canvas")).default;
 
-      // Export poster image
-      if (posterRef.current) {
-        const posterCanvas = await html2canvas(posterRef.current, {
-          backgroundColor: "#f5f0eb",
+      // 1. Export chart from iframe contentDocument
+      const frame = posterFrameRef.current;
+      if (frame?.contentDocument?.body) {
+        const body = frame.contentDocument.body;
+        const chartCanvas = await html2canvas(body, {
+          backgroundColor: "#f5f1e8",
           scale: 2,
+          width: body.scrollWidth,
+          height: body.scrollHeight,
         });
-        const posterBlob = await new Promise<Blob>((resolve) =>
-          posterCanvas.toBlob((b) => resolve(b!), "image/png")
+        const chartBlob = await new Promise<Blob>((resolve) =>
+          chartCanvas.toBlob((b) => resolve(b!), "image/png")
         );
-        const posterUrl = URL.createObjectURL(posterBlob);
+        const chartUrl = URL.createObjectURL(chartBlob);
         const a1 = document.createElement("a");
         a1.download = `bazi-chart-${id}.png`;
-        a1.href = posterUrl;
+        a1.href = chartUrl;
         a1.click();
-        URL.revokeObjectURL(posterUrl);
+        URL.revokeObjectURL(chartUrl);
       }
 
-      // Export reading image
+      // 2. Export reading
       if (readingRef.current) {
         const readingCanvas = await html2canvas(readingRef.current, {
           backgroundColor: "#ffffff",
@@ -219,30 +223,48 @@ export default function ResultPage() {
     <main className="flex-1 w-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-white sticky top-0 z-10">
-        <Link href="/" className="text-amber-600 hover:text-amber-700 text-sm font-medium">← New Reading</Link>
-        <div className="text-xs text-stone-400">
+        <Link href="/" className="text-amber-600 hover:text-amber-700 text-sm font-medium shrink-0">← New</Link>
+        <div className="text-xs text-stone-400 truncate mx-2">
           {bi?.gender === 'male' ? 'Male' : 'Female'} · {bi?.year}-{String(bi?.month).padStart(2, '0')}-{String(bi?.day).padStart(2, '0')}
         </div>
-        {phase === "done" && (
+        {phase === "done" ? (
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full transition disabled:opacity-50"
+            className="text-xs bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-full transition disabled:opacity-50 shrink-0"
           >
-            {exporting ? "Exporting..." : "Share"}
+            {exporting ? "..." : "Export"}
           </button>
+        ) : (
+          <div className="w-14 shrink-0" />
         )}
-        {phase !== "done" && <div className="w-16" />}
       </div>
 
-      {/* Poster */}
-      <div ref={posterRef} className="relative bg-stone-100">
+      {/* Poster — responsive: scale down on narrow screens */}
+      <div className="bg-stone-100 overflow-hidden flex justify-center">
         {posterHTML ? (
-          <iframe srcDoc={posterHTML} className="w-full border-none"
-            style={{ height: "calc(100vh - 60px)", minHeight: "800px" }}
-            title="Bazi & Ziwei Chart" />
+          <div className="w-full flex justify-center" style={{ minHeight: "400px" }}>
+            <iframe
+              ref={posterFrameRef}
+              srcDoc={posterHTML}
+              className="border-none origin-top"
+              title="Bazi & Ziwei Chart"
+              style={{
+                width: "1080px",
+                height: "1920px",
+                transform: "scale(var(--poster-scale, 1))",
+              }}
+            />
+            <style jsx>{`
+              @media (max-width: 1100px) {
+                iframe {
+                  --poster-scale: calc(100vw / 1080);
+                }
+              }
+            `}</style>
+          </div>
         ) : (
-          <div className="flex items-center justify-center py-20 text-stone-400">Loading poster...</div>
+          <div className="flex items-center justify-center py-20 text-stone-400">Loading chart...</div>
         )}
       </div>
 
@@ -251,7 +273,7 @@ export default function ResultPage() {
         {/* Email input */}
         {(phase === "manual" || phase === "claiming") && (
           <div className="text-center space-y-4">
-            <h2 className="text-lg font-semibold text-stone-800">Verification</h2>
+            <h2 className="text-lg font-semibold text-stone-800">Unlock Your Reading</h2>
             <p className="text-stone-500 text-sm">
               Enter the email you used on Gumroad to verify your purchase
             </p>
@@ -282,12 +304,12 @@ export default function ResultPage() {
 
         {/* Generating reading */}
         {phase === "generating" && (
-          <div className="text-center py-12 space-y-4">
+          <div className="text-center py-12 space-y-3">
             <svg className="animate-spin h-8 w-8 text-amber-600 mx-auto" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            <p className="text-stone-700 font-medium">正在分析您的八字和紫微命盘</p>
+            <p className="text-stone-700 font-medium">Analyzing your chart...</p>
           </div>
         )}
 
@@ -317,11 +339,9 @@ export default function ResultPage() {
         {/* Initial CTA */}
         {(phase === "init") && (
           <div className="text-center space-y-3">
-            <h2 className="text-lg font-semibold text-stone-800">
-              命盘解读
-            </h2>
+            <h2 className="text-lg font-semibold text-stone-800">Chart Reading</h2>
             <p className="text-stone-500 text-sm max-w-sm mx-auto">
-              Get a full BaZi + Ziwei analysis powered by DeepSeek AI —
+              Unlock a personalized BaZi + Ziwei deep reading —
               career, wealth, relationships, health, and life guidance.
             </p>
             {claimError && (
@@ -334,7 +354,7 @@ export default function ResultPage() {
               Unlock · {GUMROAD_PRICE}
             </button>
             <p className="text-xs text-stone-400">
-              One-time purchase · Secured by Gumroad · Opens in new tab
+              One-time purchase · Secured by Gumroad
             </p>
           </div>
         )}
@@ -354,7 +374,7 @@ export default function ResultPage() {
       </div>
 
       <p className="text-center text-xs text-stone-400 pb-8">
-        For cultural and entertainment purposes only · Not professional advice
+        For cultural and entertainment purposes only
       </p>
     </main>
   );
