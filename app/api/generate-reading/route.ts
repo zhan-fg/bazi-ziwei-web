@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (cached?.analysis_text) {
+      await consumeUnlockIfNeeded(db, user, chartId, unlockedCharts);
       return NextResponse.json({ analysis: cached.analysis_text, source: "cache", chartId });
     }
 
@@ -109,9 +110,37 @@ export async function POST(request: NextRequest) {
         { onConflict: "chart_id" }
       );
 
+    // Consume one unlock if chart wasn't already unlocked
+    await consumeUnlockIfNeeded(db, user, chartId, unlockedCharts);
+
     return NextResponse.json({ analysis, source: "deepseek", chartId });
   } catch (error: any) {
     console.error("generate-reading error:", error);
     return NextResponse.json({ error: error.message || "Failed" }, { status: 500 });
   }
+}
+
+/**
+ * Consume one report_unlocks_remaining if this chart isn't already in
+ * the user's unlocked_charts. Called after a successful read.
+ */
+async function consumeUnlockIfNeeded(
+  db: ReturnType<typeof requireSupabaseAdmin>,
+  user: any,
+  chartId: string,
+  unlockedCharts: string[],
+) {
+  if (!user) return;
+  if (unlockedCharts.includes(chartId)) return; // already consumed for this chart
+  if ((user.report_unlocks_remaining || 0) <= 0) return; // no unlocks to consume
+
+  unlockedCharts.push(chartId);
+  await db
+    .from(TABLES.users)
+    .update({
+      unlocked_charts: unlockedCharts,
+      report_unlocks_remaining: (user.report_unlocks_remaining || 1) - 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", user.id);
 }

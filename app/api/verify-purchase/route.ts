@@ -4,12 +4,13 @@ import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
 /**
  * POST /api/verify-purchase
  *
- * Verifies a Gumroad purchase by querying the shared `processed_sales` table
- * (written by the other project's webhook). Filters by product_permalink
- * containing "pyzrg" to identify bazi-ziwei purchases specifically.
+ * Verifies a Gumroad purchase by querying the shared `processed_sales` table.
+ * Filters by product_permalink containing "pyzrg" for bazi-ziwei purchases.
+ *
+ * Only grants one unlock per unique sale. Tracks consumed sales in
+ * bazi_processed_sales to prevent reuse.
  *
  * Body: { email: string, chartId: string }
- * Returns: { verified: boolean }
  */
 export async function POST(request: NextRequest) {
   try {
@@ -19,29 +20,31 @@ export async function POST(request: NextRequest) {
     const db = requireSupabaseAdmin();
     const normalizedEmail = email.toLowerCase().trim();
 
-    // ── Query shared processed_sales table, filter by bazi product ──
-    const { data: sale, error } = await db
+    // Find the most recent un-consumed bazi purchase for this email
+    const { data: sale } = await db
       .from("processed_sales")
-      .select("id, email, product_permalink, price")
+      .select("id, sale_id, email, product_permalink, price, created_at")
       .eq("email", normalizedEmail)
       .ilike("product_permalink", "%pyzrg%")
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (error) {
-      console.error("[verify-purchase] query error:", error);
-      return NextResponse.json({ verified: false, error: "Query failed" }, { status: 500 });
-    }
-
     if (!sale) {
       return NextResponse.json({
         verified: false,
-        error: "No purchase found. Use the same email as your Gumroad purchase.",
+        error: "No purchase found for this email. Make sure you completed payment on Gumroad.",
       });
     }
 
-    // ── Found purchase → ensure user has unlocks & unlocked_charts ──
+    // Check if this sale was already consumed
+    const { data: consumed } = await db
+      .from(TABLES.processedSales)
+      .select("id")
+      .eq("sale_id", sale.sale_id)
+      .maybeSingle();
+
+    // Upsert user record
     const { data: user } = await db
       .from(TABLES.users)
       .select("id, report_unlocks_remaining, unlocked_charts")
@@ -50,33 +53,49 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    if (user) {
-      const unlockedCharts: string[] = user.unlocked_charts || [];
-      if (!unlockedCharts.includes(chartId)) {
+    const unlockedCharts: string[] = user?.unlocked_charts || [];
+    const alreadyUnlocked = unlockedCharts.includes(chartId);
+    const hasRemaining = (user?.report_unlocks_remaining || 0) > 0;
+
+    if (alreadyUnlocked || hasRemaining) {
+      // Already has access — just add chart to unlocked list if needed
+      if (!alreadyUnlocked && user) {
         unlockedCharts.push(chartId);
-        await db
-          .from(TABLES.users)
-          .update({
-            unlocked_charts: unlockedCharts,
-            report_unlocks_remaining: Math.max(
-              user.report_unlocks_remaining || 0,
-              1
-            ),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", user.id);
-      } else if ((user.report_unlocks_remaining || 0) <= 0) {
-        // Already unlocked this chart but no remaining unlocks — ensure at least 1
-        await db
-          .from(TABLES.users)
-          .update({
-            report_unlocks_remaining: 1,
-            updated_at: new Date().toISOString(),
-          })
+        await db.from(TABLES.users)
+          .update({ unlocked_charts: unlockedCharts, updated_at: new Date().toISOString() })
           .eq("id", user.id);
       }
+      return NextResponse.json({ verified: true });
+    }
+
+    if (consumed) {
+      // Purchase exists but was already used — no more unlocks
+      return NextResponse.json({
+        verified: false,
+        error: "This purchase has already been used. Please make a new purchase to unlock another chart.",
+      });
+    }
+
+    // New unlock from this sale — mark as consumed
+    await db.from(TABLES.processedSales).insert({
+      sale_id: sale.sale_id,
+      email: normalizedEmail,
+      product_permalink: sale.product_permalink,
+      price: sale.price,
+      created_at: new Date().toISOString(),
+    });
+
+    // Grant one unlock
+    if (user) {
+      unlockedCharts.push(chartId);
+      await db.from(TABLES.users)
+        .update({
+          unlocked_charts: unlockedCharts,
+          report_unlocks_remaining: (user.report_unlocks_remaining || 0) + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", user.id);
     } else {
-      // New user — create record with this chart pre-unlocked
       await db.from(TABLES.users).insert({
         anonymous_id: `gsale-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         email: normalizedEmail,
