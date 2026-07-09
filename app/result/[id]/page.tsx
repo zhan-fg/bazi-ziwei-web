@@ -131,6 +131,9 @@ export default function ResultPage() {
         body: JSON.stringify({
           chartId: id,
           email: savedEmail,
+          chartText: data?.chartText,
+          chart: data?.chart,
+          birthInfo: data?.birthInfo,
         }),
       });
 

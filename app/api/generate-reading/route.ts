@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
 import { getChart } from "@/lib/storage";
 import { generateAnalysis, isLLMConfigured } from "@/lib/llm";
@@ -9,17 +9,21 @@ import path from "path";
  * POST /api/generate-reading
  *
  * Generates a full Bazi+Ziwei combined reading using DeepSeek API.
- * Requires the user to have already claimed this chart.
+ * Requires the user to have unlocked this chart.
+ *
+ * Body: chartId, email, + chartText/chart/birthInfo (optional — passed from
+ * client to avoid relying on local file storage in serverless environments).
  */
 export async function POST(request: NextRequest) {
   try {
-    const { chartId, email } = await request.json();
+    const body = await request.json();
+    const { chartId, email, chartText, chart, birthInfo } = body;
+
     if (!chartId || !email) {
       return NextResponse.json({ error: "chartId and email are required" }, { status: 400 });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
-
     const db = requireSupabaseAdmin();
 
     // Verify user has unlocked this chart
@@ -41,23 +45,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const data = getChart(chartId);
-    if (!data) return NextResponse.json({ error: "Chart data not found" }, { status: 404 });
-
-    // Check cache
+    // Check Supabase cache first
     const { data: cached } = await db
       .from(TABLES.chartCache)
       .select("analysis_text")
       .eq("chart_id", chartId)
-      .single();
+      .maybeSingle();
 
     if (cached?.analysis_text) {
       return NextResponse.json({ analysis: cached.analysis_text, source: "cache", chartId });
     }
 
+    // ── Resolve chart data: prefer client-supplied, fall back to local file ──
+    let data: any = null;
+    let textForLLM = "";
+    if (chartText && chart && birthInfo) {
+      data = { chartText, chart, birthInfo };
+      textForLLM = chartText;
+    } else {
+      data = getChart(chartId);
+      if (!data) {
+        return NextResponse.json({ error: "Chart data not found" }, { status: 404 });
+      }
+      textForLLM = data.chartText;
+    }
+
     if (!isLLMConfigured()) {
       const { generateAnalysisText } = await import("@/lib/analysis");
-      const text = generateAnalysisText(data.chart, data.birthInfo);
+      const analysisChart = data.chart;
+      const analysisBirthInfo = data.birthInfo;
+      const text = generateAnalysisText(analysisChart, analysisBirthInfo);
       return NextResponse.json({ analysis: text, source: "algorithm", chartId });
     }
 
@@ -67,16 +84,18 @@ export async function POST(request: NextRequest) {
     if (fs.existsSync(promptPath)) {
       systemPrompt = fs.readFileSync(promptPath, "utf-8");
     } else {
-      systemPrompt = `You are a master of Chinese astrology 鈥?BaZi and Zi Wei Dou Shu. Analyze this chart and produce a comprehensive reading with sections: Overview, Career & Wealth, Relationships, Health, Life Cycles, and Guidance. Write warmly and authoritatively.`;
+      systemPrompt = `You are a master of Chinese astrology — BaZi and Zi Wei Dou Shu. Analyze this chart and produce a comprehensive reading with sections: Overview, Career & Wealth, Relationships, Health, Life Cycles, and Guidance. Write warmly and authoritatively.`;
     }
 
-    const analysis = await generateAnalysis(systemPrompt, data.chartText, { maxTokens: 8192 });
+    const analysis = await generateAnalysis(systemPrompt, textForLLM, { maxTokens: 8192 });
 
-    // Cache
-    await db.from(TABLES.chartCache).upsert(
-      { chart_id: chartId, analysis_text: analysis, created_at: new Date().toISOString() },
-      { onConflict: "chart_id" }
-    );
+    // Cache result in Supabase
+    await db
+      .from(TABLES.chartCache)
+      .upsert(
+        { chart_id: chartId, analysis_text: analysis, created_at: new Date().toISOString() },
+        { onConflict: "chart_id" }
+      );
 
     return NextResponse.json({ analysis, source: "deepseek", chartId });
   } catch (error: any) {
@@ -84,4 +103,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed" }, { status: 500 });
   }
 }
-
