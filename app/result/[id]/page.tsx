@@ -270,7 +270,7 @@ export default function ResultPage() {
   return (
     <main className="flex-1 w-full">
       <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200 bg-white sticky top-0 z-10">
-        <Link href="/bazi" className="text-amber-600 hover:text-amber-700 text-sm font-medium shrink-0">← New</Link>
+        <Link href="/" className="text-amber-600 hover:text-amber-700 text-sm font-medium shrink-0">← New</Link>
         <div className="text-xs text-stone-400 truncate mx-2">
           {bi?.gender === 'male' ? 'Male' : 'Female'} · {bi?.year}-{String(bi?.month).padStart(2, '0')}-{String(bi?.day).padStart(2, '0')}
         </div>
