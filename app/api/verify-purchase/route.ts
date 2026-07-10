@@ -28,28 +28,23 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     // 2. Count new purchases since last credit.
-    // If last_credited_at is null (column not yet added), default to now
-    // so no historical purchases are double-counted.
+    // Only count processed_sales (shared table) — bazi_processed_sales purchases
+    // are handled by the webhook's handleBaziPurchase which directly updates bazi_users.
+    // If last_credited_at is null, default to now so no historical double-count.
     const lastCreditedAt = user?.last_credited_at || new Date().toISOString();
 
-    const [{ data: sharedSales }, { data: baziSales }] = await Promise.all([
-      db.from("processed_sales")
-        .select("sale_id, product_permalink, created_at")
-        .eq("email", normalizedEmail)
-        .gt("created_at", lastCreditedAt)
-        .order("created_at", { ascending: false }),
-      db.from(TABLES.processedSales)
-        .select("sale_id, created_at")
-        .eq("email", normalizedEmail)
-        .gt("created_at", lastCreditedAt)
-        .order("created_at", { ascending: false }),
-    ]);
+    const { data: sharedSales } = await db
+      .from("processed_sales")
+      .select("sale_id, product_permalink, created_at")
+      .eq("email", normalizedEmail)
+      .gt("created_at", lastCreditedAt)
+      .order("created_at", { ascending: false });
 
-    // Filter shared sales to pyzrg only
-    const newBaziSales = (sharedSales || [])
+    // Filter to pyzrg purchases only
+    const newPurchases = (sharedSales || [])
       .filter((s: any) => (s.product_permalink || "").toLowerCase().includes("pyzrg"));
 
-    const totalNew = newBaziSales.length + (baziSales || []).length;
+    const totalNew = newPurchases.length;
 
     // 3. Apply credits
     let reportUnlocks = user?.report_unlocks_remaining || 0;
