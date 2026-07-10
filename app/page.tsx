@@ -59,17 +59,21 @@ export default function HomePage() {
   return (
     <main className="flex-1 flex flex-col">
       {/* Hero */}
-      <section className="text-center px-4 pt-20 pb-12 bg-gradient-to-b from-amber-50 to-white">
-        <h1 className="text-5xl font-bold text-stone-800 mb-4 tracking-tight">
-          Discover Your Destiny Chart
+      <section className="text-center px-4 pt-20 pb-10 bg-gradient-to-b from-amber-50 to-white">
+        <h1 className="text-4xl sm:text-5xl font-bold text-stone-800 mb-4 tracking-tight">
+          Free Chinese Astrology Birth Chart
         </h1>
-        <p className="text-lg text-stone-500 max-w-lg mx-auto">
-          BaZi · Zi Wei Dou Shu — Traditional Chinese astrology decoded
+        <p className="text-lg sm:text-xl text-stone-500 max-w-xl mx-auto mb-2">
+          BaZi · Four Pillars of Destiny · Zi Wei Dou Shu
+        </p>
+        <p className="text-sm text-stone-400 max-w-md mx-auto">
+          Discover your career path, wealth potential, relationships, and life purpose
+          through traditional Eastern astrology — free chart calculator with AI-powered deep reading.
         </p>
       </section>
 
       {/* Form */}
-      <section className="px-4 pb-20">
+      <section className="px-4 pb-12">
         <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg border border-stone-200 p-8">
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">
@@ -83,12 +87,13 @@ export default function HomePage() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              <p className="text-stone-600 font-medium">Generating chart...</p>
+              <p className="text-stone-600 font-medium">Calculating your birth chart...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="text-center mb-2">
-                <h2 className="text-lg font-semibold text-stone-800">Enter Birth Time</h2>
+                <h2 className="text-lg font-semibold text-stone-800">Enter Your Birth Details</h2>
+                <p className="text-xs text-stone-400 mt-1">Free · No sign-up · Instant results</p>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -147,11 +152,63 @@ export default function HomePage() {
 
               <button type="submit" disabled={loading}
                 className="w-full py-3 bg-stone-800 hover:bg-stone-900 disabled:bg-stone-400 text-white font-medium rounded-lg transition">
-                Generate Chart
+                Generate Your Free Birth Chart
               </button>
             </form>
           )}
         </div>
+      </section>
+
+      {/* SEO content section */}
+      <section className="max-w-3xl mx-auto px-4 pb-16 text-sm text-stone-600 leading-relaxed space-y-6">
+        <div>
+          <h2 className="text-lg font-semibold text-stone-800 mb-2">What is BaZi (Four Pillars of Destiny)?</h2>
+          <p>
+            BaZi, also known as the Four Pillars of Destiny, is a traditional Chinese astrology system
+            that maps your birth year, month, day, and hour into four pairs of Heavenly Stems and
+            Earthly Branches. Each pillar reveals a different aspect of your life — from your core
+            personality (Day Master) to your career trajectory, wealth potential, and relationship
+            patterns. Unlike Western astrology which charts planetary positions, BaZi analyzes the
+            Five Elements (Wood, Fire, Earth, Metal, Water) interacting at the moment of your birth.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-stone-800 mb-2">What is Zi Wei Dou Shu?</h2>
+          <p>
+            Zi Wei Dou Shu, or Purple Star Astrology, maps 12 life palaces — Career, Wealth, Health,
+            Relationships, Children, and more — based on your birth time and the position of stars
+            in the Chinese celestial chart. Each palace is ruled by major and minor stars that
+            influence every area of your life. Together with BaZi, it forms the most comprehensive
+            destiny reading system in Chinese metaphysics.
+          </p>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-stone-800 mb-2">How It Works</h2>
+          <ol className="list-decimal list-inside space-y-1">
+            <li>Enter your birth date, time, and gender above</li>
+            <li>Get your free birth chart instantly — BaZi four pillars with Five Elements analysis and Ziwei 12-palace star map</li>
+            <li>Unlock an AI-powered deep reading covering career, wealth, relationships, health, and life path predictions</li>
+          </ol>
+        </div>
+
+        <div>
+          <h2 className="text-lg font-semibold text-stone-800 mb-2">Why Chinese Astrology?</h2>
+          <p>
+            While Western astrology focuses on sun signs and planetary transits, Chinese astrology
+            reveals the elemental blueprint of your life — your innate strengths, hidden challenges,
+            and the timing of major life events through 10-year luck cycles. Whether you're exploring
+            career changes, relationship decisions, or personal growth, your BaZi and Ziwei chart
+            offers a unique Eastern perspective that complements any spiritual practice.
+          </p>
+        </div>
+
+        <p className="text-xs text-stone-400 pt-4">
+          <Link href="/chinese-astrology" className="hover:text-stone-600 underline">
+            Learn more about Chinese astrology →
+          </Link>
+        </p>
       </section>
 
       {/* Footer */}
