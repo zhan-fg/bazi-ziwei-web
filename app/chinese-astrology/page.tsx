@@ -128,17 +128,11 @@ export default function ChineseAstrologyPage() {
 
       <section>
         <h2 className="text-xl font-semibold text-stone-800 mb-3">Ready to Discover Your Chart?</h2>
-        <p>
-          Generate your free BaZi and Zi Wei Dou Shu birth chart in seconds. No sign-up required.
-          Unlock an AI-powered deep reading to understand your career path, wealth potential,
-          relationships, and life purpose through the lens of traditional Chinese astrology.
+        <p className="text-stone-500">
+          <Link href="/" className="inline-block mt-4 bg-stone-800 hover:bg-stone-900 text-white px-6 py-3 rounded-lg font-medium transition">
+            Generate Your Birth Chart →
+          </Link>
         </p>
-        <Link
-          href="/"
-          className="inline-block mt-4 bg-stone-800 hover:bg-stone-900 text-white px-6 py-3 rounded-lg font-medium transition"
-        >
-          Generate Your Free Birth Chart →
-        </Link>
       </section>
     </main>
   );

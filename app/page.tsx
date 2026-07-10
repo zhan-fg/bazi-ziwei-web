@@ -61,7 +61,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="text-center px-4 pt-20 pb-10 bg-gradient-to-b from-amber-50 to-white">
         <h1 className="text-4xl sm:text-5xl font-bold text-stone-800 mb-4 tracking-tight">
-          Free Chinese Astrology Birth Chart
+          Chinese Astrology Birth Chart
         </h1>
         <p className="text-lg sm:text-xl text-stone-500 max-w-xl mx-auto mb-2">
           BaZi · Four Pillars of Destiny · Zi Wei Dou Shu
@@ -93,7 +93,7 @@ export default function HomePage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="text-center mb-2">
                 <h2 className="text-lg font-semibold text-stone-800">Enter Your Birth Details</h2>
-                <p className="text-xs text-stone-400 mt-1">Free · No sign-up · Instant results</p>
+                <p className="text-xs text-stone-400 mt-1">Instant chart generation · No sign-up required</p>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -152,7 +152,7 @@ export default function HomePage() {
 
               <button type="submit" disabled={loading}
                 className="w-full py-3 bg-stone-800 hover:bg-stone-900 disabled:bg-stone-400 text-white font-medium rounded-lg transition">
-                Generate Your Free Birth Chart
+                Generate Birth Chart
               </button>
             </form>
           )}

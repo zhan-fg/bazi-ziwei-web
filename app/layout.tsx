@@ -6,20 +6,20 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Free BaZi & Ziwei Chart — Chinese Astrology Birth Chart Calculator",
+  title: "BaZi & Ziwei Chart — Chinese Astrology Birth Chart Calculator",
   description:
-    "Generate your free BaZi (Four Pillars of Destiny) and Zi Wei Dou Shu birth chart. AI-powered Chinese astrology reading with career, wealth, relationship, and life path predictions.",
+    "Generate your BaZi (Four Pillars of Destiny) and Zi Wei Dou Shu birth chart. AI-powered Chinese astrology reading with career, wealth, relationship, and life path predictions.",
   openGraph: {
-    title: "Free Chinese Astrology Birth Chart — BaZi & Ziwei Reading",
+    title: "Chinese Astrology Birth Chart — BaZi & Ziwei Reading",
     description:
-      "Discover your destiny through traditional Chinese astrology. Free birth chart calculator with AI-powered deep reading.",
+      "Discover your destiny through traditional Chinese astrology. Birth chart calculator with AI-powered deep reading.",
     type: "website",
   },
   twitter: {
     card: "summary",
     title: "BaZi & Ziwei — Chinese Astrology Chart",
     description:
-      "Free birth chart calculator with AI-powered deep reading.",
+      "Birth chart calculator with AI-powered deep reading.",
   },
 };
 
