@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSupabaseAdmin, TABLES } from "@/lib/supabase";
 
-/**
- * POST /api/verify-purchase
- *
- * Checks bazi_users first. If the user already has unlocks from a previous
- * webhook-triggered purchase (handleBaziPurchase), returns immediately.
- *
- * Falls back to checking processed_sales for old purchases made before
- * the webhook's bazi detection was fixed. Only grants an unlock for
- * brand-new users — existing users with 0 unlocks need a new purchase.
- *
- * Body: { email: string, chartId: string }
- */
 export async function POST(request: NextRequest) {
   try {
     const { email, chartId } = await request.json();
@@ -21,35 +9,36 @@ export async function POST(request: NextRequest) {
     const db = requireSupabaseAdmin();
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Check bazi_users first (webhook now writes here for new purchases)
-    const { data: user } = await db
+    // 1. Check bazi_users
+    const { data: user, error: userErr } = await db
       .from(TABLES.users)
-      .select("id, report_unlocks_remaining, unlocked_charts, created_at")
+      .select("id, report_unlocks_remaining, unlocked_charts")
       .eq("email", normalizedEmail)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
+    console.log("[vp] user:", { found: !!user, unlocks: user?.report_unlocks_remaining, charts: user?.unlocked_charts, err: userErr?.message });
+
     const unlockedCharts: string[] = user?.unlocked_charts || [];
     const hasRemaining = (user?.report_unlocks_remaining || 0) > 0;
 
     if (unlockedCharts.includes(chartId) || hasRemaining) {
-      // Already has access via webhook — just ensure chart is in unlocked list
       if (!unlockedCharts.includes(chartId) && user) {
         unlockedCharts.push(chartId);
         await db.from(TABLES.users)
           .update({ unlocked_charts: unlockedCharts, updated_at: new Date().toISOString() })
           .eq("id", user.id);
       }
+      console.log("[vp] existing user with access — verified");
       return NextResponse.json({ verified: true });
     }
 
-    // No unlocks in bazi_users — check processed_sales for old purchases
-    const [{ data: sharedSale }, { data: baziSale }] = await Promise.all([
+    // 2. Check both purchase tables
+    const [{ data: shared, error: sharedErr }, { data: bazi, error: baziErr }] = await Promise.all([
       db.from("processed_sales")
-        .select("id, sale_id, email, created_at")
+        .select("id, sale_id, email, product_permalink, created_at")
         .eq("email", normalizedEmail)
-        .ilike("product_permalink", "%pyzrg%")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
@@ -61,9 +50,19 @@ export async function POST(request: NextRequest) {
         .maybeSingle(),
     ]);
 
-    const sale = [sharedSale, baziSale].filter(Boolean).sort(
+    console.log("[vp] sales:", {
+      shared: shared ? { id: shared.id, permalink: shared.product_permalink, err: sharedErr?.message } : null,
+      bazi: bazi ? { id: bazi.id, err: baziErr?.message } : null,
+    });
+
+    // Filter shared sale by product_permalink manually (avoid ilike issues)
+    const validShared = shared && (shared.product_permalink || "").toLowerCase().includes("pyzrg") ? shared : null;
+
+    const sale = [validShared, bazi].filter(Boolean).sort(
       (a, b) => new Date(b!.created_at).getTime() - new Date(a!.created_at).getTime()
     )[0];
+
+    console.log("[vp] selected sale:", sale ? { id: sale.id, sale_id: sale.sale_id } : null);
 
     if (!sale) {
       return NextResponse.json({
@@ -72,17 +71,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Only grant unlock for brand-new users (first-time verification).
-    // Existing users with 0 unlocks must make a new purchase — the webhook
-    // will grant them via handleBaziPurchase.
+    // 3. Grant unlock: new users only
     if (user) {
+      console.log("[vp] existing user, no unlocks — denied");
       return NextResponse.json({
         verified: false,
         error: "No remaining unlocks. Please make a new purchase.",
       });
     }
 
-    // New user — grant one unlock from this old purchase
     await db.from(TABLES.users).insert({
       anonymous_id: `gsale-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       email: normalizedEmail,
@@ -92,6 +89,7 @@ export async function POST(request: NextRequest) {
       subscription_status: "none",
     });
 
+    console.log("[vp] new user created — verified");
     return NextResponse.json({ verified: true });
   } catch (error: any) {
     console.error("[verify-purchase] error:", error);
