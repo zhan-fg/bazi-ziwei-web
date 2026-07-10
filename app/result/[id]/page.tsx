@@ -25,6 +25,8 @@ export default function ResultPage() {
   const [claimError, setClaimError] = useState("");
   const [analysis, setAnalysis] = useState("");
   const [exporting, setExporting] = useState<"" | "chart" | "reading">("");
+  const [balance, setBalance] = useState<number | null>(null);
+  const [checking, setChecking] = useState(false);
 
   const posterFrameRef = useRef<HTMLIFrameElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
@@ -58,6 +60,28 @@ export default function ResultPage() {
       if (unlocked.includes(id)) setPhase("unlocked");
     } catch {}
   }, [id]);
+
+  // ─── Balance check ──────────────────────────────────────
+
+  const checkBalance = async () => {
+    const userEmail = email.trim();
+    if (!userEmail || !userEmail.includes("@")) return;
+    setChecking(true);
+    setBalance(null);
+    try {
+      const res = await fetch(`/api/check-balance?email=${encodeURIComponent(userEmail)}`);
+      const d = await res.json();
+      if (res.ok) setBalance(d.balance ?? 0);
+    } catch {
+      setBalance(null);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const unlockWithBalance = () => {
+    setPhase("generating");
+  };
 
   // ─── Payment ────────────────────────────────────────────
 
@@ -310,6 +334,39 @@ export default function ResultPage() {
               Unlock · {GUMROAD_PRICE}
             </button>
             <p className="text-xs text-stone-400">One-time purchase · Secured by Gumroad</p>
+
+            {/* Balance check */}
+            <div className="border-t border-stone-200 pt-5 mt-4">
+              <p className="text-xs text-stone-400 mb-2">Already purchased? Check your balance:</p>
+              <div className="flex gap-2 max-w-xs mx-auto">
+                <input type="email" value={email}
+                  onChange={(e) => { setEmail(e.target.value); setBalance(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && checkBalance()}
+                  placeholder="Gumroad email"
+                  className="flex-1 px-3 py-2 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent" />
+                <button onClick={checkBalance}
+                  disabled={checking || !email.trim()}
+                  className="px-4 py-2 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-700 text-sm font-medium transition disabled:opacity-50">
+                  {checking ? "..." : "Check"}
+                </button>
+              </div>
+              {balance !== null && balance > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm text-green-700 font-medium">
+                    Balance: {balance} unlock{balance > 1 ? "s" : ""} available
+                  </p>
+                  <button onClick={() => { handleVerify(); }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
+                    Unlock Reading
+                  </button>
+                </div>
+              )}
+              {balance === 0 && (
+                <p className="text-sm text-stone-500 mt-3">
+                  No balance. Please purchase above first.
+                </p>
+              )}
+            </div>
           </div>
         )}
 
