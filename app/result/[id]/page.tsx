@@ -111,8 +111,14 @@ export default function ResultPage() {
 
   const onUnlocked = useCallback((userEmail: string) => {
     setPhase("generating");
-    generateReading(userEmail);
-  }, [id]);
+  }, []);
+
+  // Effect: start reading when phase changes to generating
+  useEffect(() => {
+    if (phase === "generating" && data) {
+      generateReading(email);
+    }
+  }, [phase, data, email]);
 
   const generateReading = async (userEmail: string) => {
     try {
@@ -309,11 +315,19 @@ export default function ResultPage() {
 
         {phase === "unlocked" && (
           <div className="text-center space-y-3">
-            <button onClick={() => { setPhase("generating"); generateReading(email); }}
-              className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-xl font-bold text-lg transition shadow-lg shadow-amber-200">
-              Generate Reading
-            </button>
-            <p className="text-xs text-stone-400">Already unlocked · No additional charge</p>
+            <p className="text-stone-500 text-sm">This chart is unlocked. Enter your email to generate your reading.</p>
+            <div className="flex gap-2 max-w-sm mx-auto">
+              <input type="email" value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+                className="flex-1 px-4 py-2.5 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                autoFocus />
+              <button onClick={() => { setPhase("generating"); }}
+                disabled={!email.trim()}
+                className="px-6 py-2.5 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 disabled:opacity-50 transition">
+                Generate
+              </button>
+            </div>
           </div>
         )}
       </div>
