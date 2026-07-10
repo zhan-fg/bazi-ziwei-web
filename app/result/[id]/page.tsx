@@ -30,6 +30,7 @@ export default function ResultPage() {
 
   const posterFrameRef = useRef<HTMLIFrameElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     fetch(`/api/reading?id=${id}`)
@@ -60,6 +61,18 @@ export default function ResultPage() {
       if (unlocked.includes(id)) setPhase("unlocked");
     } catch {}
   }, [id]);
+
+  // Generate QR code when reading is complete
+  useEffect(() => {
+    if (phase !== "done" || !qrRef.current) return;
+    import("qrcode").then((QRCode) => {
+      const shareUrl = `https://bazi-ziwei-web.vercel.app/share/${id}`;
+      QRCode.toCanvas(qrRef.current!, shareUrl, {
+        width: 100, margin: 1,
+        color: { dark: "#1a1a1a", light: "#ffffff" },
+      });
+    });
+  }, [phase, id]);
 
   const checkBalance = async () => {
     const userEmail = email.trim();
@@ -259,8 +272,8 @@ export default function ResultPage() {
           </div>
         ) : <div className="w-20 shrink-0" />}
       </div>
-
-      <div className="bg-stone-100 overflow-hidden flex justify-center">
+      {/* Poster */}
+      <div className="bg-stone-100 overflow-hidden flex justify-center relative">
         {posterHTML ? (
           <div className="w-full flex justify-center" style={{ minHeight: "400px" }}>
             <iframe ref={posterFrameRef} srcDoc={posterHTML}
@@ -270,6 +283,15 @@ export default function ResultPage() {
           </div>
         ) : (
           <div className="flex items-center justify-center py-20 text-stone-400">Loading chart...</div>
+        )}
+        {/* QR code overlay — appears after reading is generated */}
+        {phase === "done" && (
+          <div className="absolute bottom-4 right-4 bg-white rounded-xl shadow-lg p-2 flex items-center gap-2">
+            <canvas ref={qrRef} width={100} height={100} />
+            <div className="text-[10px] text-stone-500 leading-tight max-w-[80px]">
+              Scan to view<br />full reading
+            </div>
+          </div>
         )}
       </div>
 

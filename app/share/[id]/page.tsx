@@ -15,26 +15,17 @@ export default function SharePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState("");
-  const [posterHTML, setPosterHTML] = useState("");
 
   useEffect(() => {
-    fetch(`/api/reading?id=${id}`)
+    fetch(`/api/share-reading?id=${id}`)
       .then(async (res) => {
         const d = await res.json();
-        if (!res.ok) throw new Error(d.error || "Failed");
+        if (!res.ok) throw new Error(d.error || "Not found");
         return d;
       })
-      .then(() => {
-        // Load reading from public cache
-        return fetch(`/api/share-reading?id=${id}`);
-      })
-      .then(async (res) => {
-        const d = await res.json();
+      .then((d) => {
         if (d.analysis) setAnalysis(d.analysis);
-        return fetch(`/api/poster-image?id=${id}`);
-      })
-      .then(async (res) => {
-        if (res.ok) setPosterHTML(await res.text());
+        else setError("Reading not yet generated for this chart.");
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
@@ -61,34 +52,18 @@ export default function SharePage() {
         </Link>
       </div>
 
-      {posterHTML && (
-        <div className="bg-stone-100 overflow-hidden flex justify-center">
-          <div className="w-full flex justify-center" style={{ minHeight: "400px" }}>
-            <iframe srcDoc={posterHTML} className="border-none origin-top"
-              style={{ width: "1080px", height: "1920px", transform: "scale(var(--poster-scale, 1))" }}
-              title="Chart" />
-            <style jsx>{`@media (max-width: 1100px) { iframe { --poster-scale: calc(100vw / 1080); } }`}</style>
-          </div>
+      <div className="max-w-3xl mx-auto px-4 py-8">
+        <div className="bg-white rounded-xl border border-stone-200 p-6">
+          <div className="prose prose-stone max-w-none text-sm leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: parseMarkdown(analysis) }} />
         </div>
-      )}
+      </div>
 
-      {analysis && (
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl border border-stone-200 p-6">
-            <div className="prose prose-stone max-w-none text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: parseMarkdown(analysis) }} />
-          </div>
-        </div>
-      )}
-
-      {!analysis && (
-        <div className="text-center py-20">
-          <p className="text-stone-400 text-sm">Reading not yet generated for this chart.</p>
-          <Link href="/" className="text-amber-600 hover:underline text-sm mt-4 inline-block">
-            Generate your own chart →
-          </Link>
-        </div>
-      )}
+      <div className="text-center pb-8">
+        <Link href="/" className="text-amber-600 hover:underline text-sm">
+          Generate your own BaZi & Ziwei chart →
+        </Link>
+      </div>
     </main>
   );
 }
