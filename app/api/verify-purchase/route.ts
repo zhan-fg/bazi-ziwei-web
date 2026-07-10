@@ -27,8 +27,10 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
 
-    // 2. Count new purchases since last credit
-    const lastCreditedAt = user?.last_credited_at || "1970-01-01";
+    // 2. Count new purchases since last credit.
+    // If last_credited_at is null (column not yet added), default to now
+    // so no historical purchases are double-counted.
+    const lastCreditedAt = user?.last_credited_at || new Date().toISOString();
 
     const [{ data: sharedSales }, { data: baziSales }] = await Promise.all([
       db.from("processed_sales")
