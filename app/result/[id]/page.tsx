@@ -30,6 +30,7 @@ export default function ResultPage() {
 
   const posterFrameRef = useRef<HTMLIFrameElement>(null);
   const readingRef = useRef<HTMLDivElement>(null);
+  const qrRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     fetch(`/api/reading?id=${id}`)
@@ -52,7 +53,7 @@ export default function ResultPage() {
       .then(async (r) => { if (r.ok) setPosterHTML(await r.text()); })
       .catch(() => {});
   }, [data, id]);
-
+  // Check if already unlocked
   useEffect(() => {
     if (!id) return;
     try {
@@ -60,6 +61,16 @@ export default function ResultPage() {
       if (unlocked.includes(id)) setPhase("unlocked");
     } catch {}
   }, [id]);
+
+  // Generate QR code when reading is done
+  useEffect(() => {
+    if (phase !== "done" || !qrRef.current) return;
+    import("qrcode").then((QRCode) => {
+      QRCode.toCanvas(qrRef.current!, "https://bazi-ziwei-web.vercel.app", {
+        width: 120, margin: 1, color: { dark: "#1a1a1a", light: "#ffffff" },
+      });
+    });
+  }, [phase]);
 
   // ─── Balance check ──────────────────────────────────────
 
@@ -195,9 +206,17 @@ export default function ResultPage() {
     setExporting("reading");
     try {
       const el = readingRef.current;
-      if (!el) return;
+      if (!el) { console.error("Export: readingRef is null"); return; }
+      if (!el.offsetHeight) { console.error("Export: readingRef has zero height"); return; }
       const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(el, { backgroundColor: "#ffffff", scale: 2 });
+      const canvas = await html2canvas(el, {
+        backgroundColor: "#ffffff", scale: 2,
+        onclone: (clonedDoc) => {
+          // Ensure the cloned element is visible
+          const cloned = clonedDoc.body.firstElementChild as HTMLElement;
+          if (cloned) cloned.style.overflow = "visible";
+        },
+      });
       downloadBlob(await canvasToBlob(canvas), `bazi-reading-${id}.png`);
     } catch (err) {
       console.error("Export reading failed:", err);
@@ -389,9 +408,17 @@ export default function ResultPage() {
         )}
       </div>
 
-      <p className="text-center text-xs text-stone-400 pb-8">
+      <p className="text-center text-xs text-stone-400 pb-4">
         For cultural and entertainment purposes only
       </p>
+
+      {/* QR code — links to website */}
+      {phase === "done" && (
+        <div className="text-center pb-8">
+          <canvas ref={qrRef} className="mx-auto" width={120} height={120} />
+          <p className="text-xs text-stone-400 mt-1">Scan for your own chart reading</p>
+        </div>
+      )}
     </main>
   );
 }
