@@ -73,24 +73,13 @@ export async function POST(request: NextRequest) {
         .single();
     }
 
-    // 4. Check if user can unlock this chart
+    // 4. Check access: user needs either remaining unlocks or chart already unlocked
     const unlockedCharts: string[] = user?.unlocked_charts || [];
     if (reportUnlocks <= 0 && !unlockedCharts.includes(chartId)) {
       return NextResponse.json({
         verified: false,
         error: "No purchase found. Please complete a purchase on Gumroad first.",
       });
-    }
-
-    // 5. Grant access to this specific chart
-    if (!unlockedCharts.includes(chartId)) {
-      unlockedCharts.push(chartId);
-      await db.from(TABLES.users)
-        .update({
-          unlocked_charts: unlockedCharts,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", user?.id);
     }
 
     return NextResponse.json({ verified: true, credits: reportUnlocks });
