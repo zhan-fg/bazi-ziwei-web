@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 2. Check both purchase tables
-    const [{ data: shared, error: sharedErr }, { data: bazi, error: baziErr }] = await Promise.all([
+    const [{ data: shared }, { data: bazi }] = await Promise.all([
       db.from("processed_sales")
         .select("id, sale_id, email, product_permalink, created_at")
         .eq("email", normalizedEmail)
@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     ]);
 
     console.log("[vp] sales:", {
-      shared: shared ? { id: shared.id, permalink: shared.product_permalink, err: sharedErr?.message } : null,
-      bazi: bazi ? { id: bazi.id, err: baziErr?.message } : null,
+      shared: shared ? { id: shared.id, permalink: shared.product_permalink } : null,
+      bazi: bazi ? { id: bazi.id } : null,
     });
 
     // Filter shared sale by product_permalink manually (avoid ilike issues)
