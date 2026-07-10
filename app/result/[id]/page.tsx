@@ -187,13 +187,28 @@ export default function ResultPage() {
     setExporting("chart");
     try {
       const html2canvas = (await import("html2canvas")).default;
-      const frame = posterFrameRef.current;
-      if (!frame?.contentDocument?.body) return;
-      const body = frame.contentDocument.body;
+
+      // Fetch poster with QR code
+      const res = await fetch(`/api/poster-image?id=${id}&qr=1`);
+      if (!res.ok) { setExporting(""); return; }
+      const qrHTML = await res.text();
+
+      // Create hidden iframe for capture
+      const tmpFrame = document.createElement("iframe");
+      tmpFrame.style.cssText = "position:fixed;left:-9999px;width:1080px;height:2000px;";
+      tmpFrame.srcdoc = qrHTML;
+      document.body.appendChild(tmpFrame);
+      await new Promise<void>((resolve) => { tmpFrame.onload = () => resolve(); });
+      await new Promise((r) => setTimeout(r, 800)); // wait for images to load
+
+      const body = tmpFrame.contentDocument?.body;
+      if (!body) { document.body.removeChild(tmpFrame); setExporting(""); return; }
+
       const canvas = await html2canvas(body, {
         backgroundColor: "#f5f1e8", scale: 2,
         width: body.scrollWidth, height: body.scrollHeight,
       });
+      document.body.removeChild(tmpFrame);
       downloadBlob(await canvasToBlob(canvas), `bazi-chart-${id}.png`);
     } catch (err) {
       console.error("Export chart failed:", err);
